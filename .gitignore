@@ -40,4 +40,4 @@
     # typescript
     *.tsbuildinfo
     next-env.d.ts
-frontend/cityquest/node_modules/
+**/node_modules/
