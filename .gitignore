@@ -14,8 +14,9 @@
     /coverage
 
    # next.js
-    frontend/cityquest/.next/
+    .next
     /frontend/cityquest/out/
+
 
 
     # production

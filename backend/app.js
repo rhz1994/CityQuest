@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
-const port = 3000;
+const port = 5000;
+const cors = require("cors");
 
 // Importera rutter
 const citiesRoutes = require("./routes/cities");
@@ -13,6 +14,9 @@ const usersRoutes = require("./routes/users");
 const rewardsRoutes = require("./routes/rewards");
 
 app.use(express.json()); // För att kunna ta emot JSON-requests
+
+// Använd CORS-middleware för att tillåta förfrågningar från alla domäner
+app.use(cors({ origin: "http://localhost:3000" })); // Endast tillåt förfrågningar från frontend på localhost:3000
 
 // Koppla rutter
 app.use("/cities", citiesRoutes);

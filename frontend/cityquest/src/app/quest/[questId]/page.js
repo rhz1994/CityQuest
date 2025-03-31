@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -9,8 +11,9 @@ export default function QuestPage() {
 
   useEffect(() => {
     async function fetchQuest() {
+      console.log("Fetching quest for ID:", questId); // Debugging logg
       try {
-        const res = await fetch(`http://localhost:3000/quests/name/${questId}`); // Säkerställ att backend har denna route
+        const res = await fetch(`http://localhost:5000/quests/${questId}`); // Dynamisk route med questId
         if (!res.ok) throw new Error("Failed to fetch quest");
         const data = await res.json();
         setQuest(data);
