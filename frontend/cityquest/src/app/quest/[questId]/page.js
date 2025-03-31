@@ -1,40 +1,25 @@
-"use client";
+import React from "react";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+// Hämta quest-data på serversidan
+async function getQuest(questId) {
+  const res = await fetch(`http://localhost:5000/quests/${questId}`);
 
-export default function QuestPage() {
-  const params = useParams();
-  const questId = params?.questId; // Fallback om useParams() är undefined
-  const [quest, setQuest] = useState(null);
-  const [loading, setLoading] = useState(true);
+  if (!res.ok) {
+    return null; // Returnera null om questen inte hittas
+  }
 
-  useEffect(() => {
-    async function fetchQuest() {
-      console.log("Fetching quest for ID:", questId); // Debugging logg
-      try {
-        const res = await fetch(`http://localhost:5000/quests/${questId}`); // Dynamisk route med questId
-        if (!res.ok) throw new Error("Failed to fetch quest");
-        const data = await res.json();
-        setQuest(data);
-      } catch (error) {
-        console.error("Error loading quest:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
+  return res.json();
+}
 
-    if (questId) {
-      fetchQuest();
-    }
-  }, [questId]);
+export default async function QuestPage({ params }) {
+  const { questId } = await params; // Hämta questId från URL:en
+  const quest = await getQuest(questId);
 
-  if (loading) return <p>Loading...</p>;
   if (!quest) return <p>Quest not found</p>;
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold">{quest.questId}</h1>
+      <h1 className="text-3xl font-bold">{quest.questName}</h1>
       <p className="text-gray-700">{quest.questDescription}</p>
     </div>
   );

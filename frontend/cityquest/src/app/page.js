@@ -20,6 +20,16 @@ export default function HomePage() {
             Start Your Quest
           </button>
         </Link>
+
+        {/* En knapp som leder vidare till en annan sida, exempelvis en "city"-sida */}
+        <Link href="/city">
+          <button
+            style={{ padding: "10px 20px", fontSize: "16px" }}
+            className="cursor-pointer"
+          >
+            gå till städer
+          </button>
+        </Link>
       </main>
 
       <footer>

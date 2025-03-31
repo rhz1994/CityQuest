@@ -10,6 +10,28 @@ async function getCities(req, res) {
   }
 }
 
+async function getCityByName(req, res) {
+  const { cityName } = req.params;
+
+  try {
+    // Exekvera SQL-frågan
+    const [rows] = await db.query("SELECT * FROM cities WHERE cityName = ?", [
+      cityName,
+    ]);
+
+    // Om staden inte hittas
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "City not found" });
+    }
+
+    // Returnera stadens data
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error fetching city by name:", err);
+    res.status(500).json({ error: "Database query failed" });
+  }
+}
+
 async function createCity(req, res) {
   const { cityName, cityDescription } = req.body;
   try {
@@ -52,6 +74,7 @@ async function deleteCity(req, res) {
 
 module.exports = {
   getCities,
+  getCityByName,
   createCity,
   updateCity,
   deleteCity,
