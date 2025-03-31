@@ -6,6 +6,9 @@ const questsController = require("../controllers/questsController");
 router.get("/", questsController.getQuests);
 
 // POST: Skapa en ny quest
+
 router.post("/", questsController.createQuest);
+
+// Hämta namn för quest
 
 module.exports = router;

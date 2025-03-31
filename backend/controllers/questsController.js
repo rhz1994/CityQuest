@@ -17,7 +17,7 @@ async function createQuest(req, res) {
 
   try {
     const [result] = await db.query(
-      "INSERT INTO quests (name, description) VALUES (?, ?)",
+      "INSERT INTO quests (questName, questDescription) VALUES (?, ?)",
       [questName, questDescription]
     );
     res.status(201).json({ message: "Quest created", id: result.insertId });
@@ -30,4 +30,5 @@ async function createQuest(req, res) {
 module.exports = {
   getQuests,
   createQuest,
+  getQuestName,
 };
