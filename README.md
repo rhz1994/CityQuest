@@ -1,37 +1,53 @@
-     Startskärmen: 
+CityQuest is an interactive adventure app that takes users on a journey through historical cities, solving mysteries and challenges related to landmarks, history, and culture. The app guides the user through quests, providing clues and puzzles at physical locations.
+Features
+1. Start Screen
 
-När användaren öppnar appen, får den upp en karta som visar den närmaste staden. 
+    Upon opening the app, the user sees a map showing the nearest city based on their location.
 
-När användaren väljer en stad, skickas de till en ny sida där den första utmaningen dyker upp. 
+    The user selects a city, and they are taken to a new page where the first challenge of the quest appears.
 
-    Utmaningskort: 
+2. Challenge Cards
 
-För varje stad, skapa en serie kort som representerar de olika utmaningarna. 
+    For each city, a series of cards represent the challenges the user will face.
 
-Varje kort ska visa information om utmaningen, exempelvis "Hitta en bokstav på en offentlig plats", och en knapp för att börja uppgiften. 
+    Each card displays information about the challenge (e.g., "Find a letter at a public landmark") and a button to start the task.
 
-När utmaningen är slutförd, kan användaren trycka på en knapp för att låsa upp nästa utmaning. 
+    After completing a challenge, the user can press a button to unlock the next challenge.
 
-    Interaktiv karta och fysisk plats: 
+3. Interactive Map & Physical Locations
 
-Du kan skapa en karta där användaren får en fysisk plats (t.ex. ett monument, en park eller en byggnad) som de ska besöka. 
+    The user is provided with a physical location (e.g., a monument, park, or building) to visit.
 
-När användaren kommer till den platsen, visas en ny fråga eller ledtråd i appen som hjälper dem att lösa nästa pussel. 
+    Once the user reaches the location, a new clue or question related to the puzzle appears in the app.
 
-    Pussel och frågesport: 
+4. Puzzles & Quizzes
 
-Efter att ha besökt den fysiska platsen, måste användaren lösa ett pussel eller svara på en fråga relaterad till stadens historia. 
+    After visiting a physical location, the user must solve a puzzle or answer a question related to the city's history.
 
-Om de svarar rätt, låses nästa utmaning upp. 
+    If the user answers correctly, the next challenge is unlocked.
 
-    Mysteriekoppling: 
+5. Mystery Connection
 
-Alla utmaningar och pussel leder fram till ett större mysterium som rör stadens historia. T.ex. en gammal legend eller ett historiskt mysterium som användaren löser genom att slutföra varje quest. 
+    All challenges and puzzles are connected to a larger mystery that involves the city's history (e.g., an ancient legend or historical event).
 
-    Statistik och feedback: 
+    Completing each quest brings the user closer to solving the mystery.
 
-Efter varje utmaning kan du skapa en sektion där användaren får feedback, som exempelvis: 
+6. Statistics & Feedback
 
-Hur lång tid de tog att lösa utmaningen. 
- En kort sammanfattning av lösningen. 
- En möjlighet för användaren att ge feedback om upplevelsen. 
+    After completing a challenge, the user receives feedback:
+
+        Time taken to solve the challenge.
+
+        A brief summary of the solution.
+
+        An option to leave feedback about the experience.
+
+Tech Stack
+
+    Frontend: React, Next.js
+
+    Backend: Node.js, Express
+
+    Database: PostgreSQL (SQL)
+
+    Geolocation: Uses the user's location to determine the nearest city.
