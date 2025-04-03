@@ -1,8 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const cluesController = require("../controllers/cluesController");
+const {
+  getClues,
+  getClueByClueId,
+  getCluesByQuestId,
+} = require("../controllers/cluesController");
 
-// GET: Hämta alla ledtrådar
-router.get("/", cluesController.getClues);
+// Hämta alla ledtrådar
+
+router.get("/", getClues);
+
+// Hämta ledtrådar baserat på clueId
+router.get("/:clueId", getClueByClueId);
+
+// Hämta ledtrådar baserat på questId
+
+router.get("/quest/:questId", getCluesByQuestId);
 
 module.exports = router;

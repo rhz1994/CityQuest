@@ -11,6 +11,24 @@ async function getQuests(req, res) {
   }
 }
 
+// Funktion för att hämta quest baserat på stadens namn
+async function getQuestByCityName(req, res) {
+  const { cityName } = req.params;
+  try {
+    const [rows] = await db.query(
+      `SELECT quests.*, cities.cityName
+FROM quests
+JOIN cities ON cities.cityId = quests.cityId
+WHERE cities.cityName = ? `,
+      [cityName]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching quests", err);
+    res.status(500).json({ error: "Database query failed" });
+  }
+}
+
 async function getQuestById(req, res) {
   const { questId } = req.params; // Hämta questId från URL-parametrar
 
@@ -47,6 +65,7 @@ async function createQuest(req, res) {
 }
 
 module.exports = {
+  getQuestByCityName,
   getQuests,
   createQuest,
   getQuestById,

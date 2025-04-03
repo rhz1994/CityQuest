@@ -2,6 +2,8 @@
 
 import Link from "next/link"; // För att använda Next.js routing
 
+const cities = ["Gothenburg"];
+
 export default function HomePage() {
   return (
     <div style={{ textAlign: "center", padding: "50px" }}>
@@ -22,14 +24,16 @@ export default function HomePage() {
         </Link>
 
         {/* En knapp som leder vidare till en annan sida, exempelvis en "city"-sida */}
-        <Link href="/city">
-          <button
-            style={{ padding: "10px 20px", fontSize: "16px" }}
-            className="cursor-pointer"
-          >
-            gå till städer
-          </button>
-        </Link>
+        {cities.map((city) => (
+          <Link key={city} href={`/city/${city}`}>
+            <button
+              style={{ padding: "10px 20px", fontSize: "16px" }}
+              className="cursor-pointer"
+            >
+              {city}
+            </button>
+          </Link>
+        ))}
       </main>
 
       <footer>

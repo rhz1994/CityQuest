@@ -15,9 +15,13 @@ async function getCityByName(req, res) {
 
   try {
     // Exekvera SQL-frågan
-    const [rows] = await db.query("SELECT * FROM cities WHERE cityName = ?", [
-      cityName,
-    ]);
+    const [rows] = await db.query(
+      `SELECT cities.*, quests.questId, quests.questName
+      FROM cities
+      JOIN quests ON cities.cityId = quests.cityId
+      WHERE cities.cityName = ?`,
+      [cityName]
+    );
 
     // Om staden inte hittas
     if (rows.length === 0) {
