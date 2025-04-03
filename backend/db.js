@@ -1,12 +1,13 @@
-// db.js
+require("dotenv").config(); // Ladda in miljövariabler
+
 const mysql = require("mysql2");
 
 // Skapa en MySQL-anslutning
 const db = mysql.createPool({
-  host: "localhost",
-  user: "root", // Byt till ditt användarnamn för databasen
-  password: "password", // Byt till ditt lösenord för databasen
-  database: "CityQuest", // Byt till ditt databasnamn
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 module.exports = db.promise(); // Exportera för att använda Promise-baserad API
