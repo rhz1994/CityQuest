@@ -13,17 +13,6 @@ export default function HomePage() {
       </header>
 
       <main>
-        {/* En knapp som leder vidare till en annan sida, exempelvis en "quest"-sida */}
-        <Link href="/quest">
-          <button
-            style={{ padding: "10px 20px", fontSize: "16px" }}
-            className="cursor-pointer"
-          >
-            Start Your Quest
-          </button>
-        </Link>
-
-        {/* En knapp som leder vidare till en annan sida, exempelvis en "city"-sida */}
         {cities.map((city) => (
           <Link key={city} href={`/city/${city}`}>
             <button

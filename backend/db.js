@@ -1,4 +1,4 @@
-require("dotenv").config(); // Ladda in miljövariabler
+require("dotenv").config();
 
 const mysql = require("mysql2");
 
@@ -10,4 +10,4 @@ const db = mysql.createPool({
   database: process.env.DB_NAME,
 });
 
-module.exports = db.promise(); // Exportera för att använda Promise-baserad API
+module.exports = db.promise();

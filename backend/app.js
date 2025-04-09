@@ -13,9 +13,9 @@ const userProgressRoutes = require("./routes/userProgress");
 const usersRoutes = require("./routes/users");
 const rewardsRoutes = require("./routes/rewards");
 
-app.use(express.json()); // För att kunna ta emot JSON
+app.use(express.json());
 
-app.use(cors({ origin: "http://localhost:3000" })); // Endast tillåt förfrågningar från frontend på localhost:3000
+app.use(cors({ origin: "http://localhost:3000" }));
 
 // Koppla rutter
 app.use("/cities", citiesRoutes);
