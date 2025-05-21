@@ -1,45 +1,40 @@
 import React from "react";
-import Clue from "../../../components/clue"; // Importera klientkomponenten för ledtråd
+import Link from "next/link";
+import CluesModal from "../../../components/CluesModal"; // Ny client component
 
-// Serverkomponent som hämtar quest och clues
 export default async function QuestPage({ params }) {
-  const questId = params.questId;
+  const { questId } = await params;
 
-  try {
-    // Hämta questdata från API:et
-    const questRes = await fetch(`http://localhost:5000/quests/${questId}`);
-    if (!questRes.ok) {
-      return <p>Quest not found.</p>;
-    }
-    const quest = await questRes.json();
-
-    // Hämta ledtrådar från API:et
-    const cluesRes = await fetch(
-      `http://localhost:5000/clues/quest/${questId}`
-    );
-    if (!cluesRes.ok) {
-      return <p>No clues found for this quest.</p>;
-    }
-    const clues = await cluesRes.json();
-
+  // Hämta quest och clues på serversidan
+  const questRes = await fetch(`http://localhost:5000/quests/${questId}`);
+  if (!questRes.ok) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold">{quest.questName}</h1>
-        <p className="text-gray-700">{quest.questDescription}</p>
-
-        <div>
-          <h2 className="text-xl font-semibold mt-4">Clues:</h2>
-          <ul>
-            {/* Skapa en klientkomponent för varje ledtråd */}
-            {clues.map((clue) => (
-              <Clue key={clue.clueId} clue={clue} />
-            ))}
-          </ul>
-        </div>
-      </div>
+      <main className="flex flex-col items-center mt-10">
+        <p className="text-red-400 font-semibold">Quest not found.</p>
+      </main>
     );
-  } catch (error) {
-    console.error(error);
-    return <p>Error loading data.</p>;
   }
+  const quest = await questRes.json();
+
+  const cluesRes = await fetch(`http://localhost:5000/clues/quest/${questId}`);
+  const clues = await cluesRes.json();
+
+  return (
+    <main className="max-w-xl mx-auto mt-10 bg-gray-900/90 rounded-xl shadow-xl p-8 flex flex-col items-center">
+      <Link
+        href={`/city/${quest.cityName}`}
+        className="mb-6 bg-yellow-600 hover:bg-yellow-700 text-gray-900 font-bold py-2 px-6 rounded-lg shadow transition-colors self-start"
+      >
+        ← Back to Quests
+      </Link>
+      <h1 className="text-yellow-400 text-2xl font-extrabold mb-2 tracking-wider">
+        {quest.questName}
+      </h1>
+      <p className="text-yellow-100 mb-6 text-center">
+        {quest.questDescription}
+      </p>
+      {/* Modal-knapp och modal */}
+      <CluesModal clues={clues} />
+    </main>
+  );
 }

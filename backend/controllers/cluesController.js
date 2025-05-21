@@ -37,20 +37,23 @@ async function getClueByClueId(req, res) {
 
 // Hämta alla ledtrådar som tillhör ett specifikt questId
 async function getCluesByQuestId(req, res) {
-  const { questId } = req.params; // Hämtar questId från URL:en
-
+  const { questId } = req.params;
   try {
-    const [rows] = await db.query("SELECT * FROM clues WHERE questId = ?", [
-      questId,
-    ]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "No clues found for this quest" });
-    }
-
-    res.json(rows); // Returnera alla ledtrådar för questet
+    const [rows] = await db.query(
+      `SELECT
+        clues.*,
+        puzzles.puzzleId,
+        puzzles.puzzleName,
+        puzzles.puzzleDescription,
+        puzzles.puzzleAnswer
+      FROM clues
+      LEFT JOIN puzzles ON clues.clueId = puzzles.clueId
+      WHERE clues.questId = ?`,
+      [questId]
+    );
+    res.json(rows);
   } catch (err) {
-    console.error("Error fetching clues by quest ID:", err);
+    console.error("Error fetching clues with puzzles:", err);
     res.status(500).json({ error: "Database query failed" });
   }
 }

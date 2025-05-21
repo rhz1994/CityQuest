@@ -15,8 +15,7 @@ const rewardsRoutes = require("./routes/rewards");
 
 app.use(express.json());
 
-app.use(cors({ origin: "http://localhost:3000" }));
-
+app.use(cors());
 // Koppla rutter
 app.use("/cities", citiesRoutes);
 app.use("/clues", cluesRoutes);

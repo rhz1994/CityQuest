@@ -1,8 +1,9 @@
+-- Skapa databas och använd den
+DROP DATABASE IF EXISTS CityQuest;
 CREATE DATABASE CityQuest;
-
 USE CityQuest;
 
--- Skapar tabell för städer
+-- Städer
 CREATE TABLE cities (
     cityId INT NOT NULL AUTO_INCREMENT,
     cityName VARCHAR(100) NOT NULL UNIQUE,
@@ -12,7 +13,7 @@ CREATE TABLE cities (
     PRIMARY KEY (cityId)
 );
 
--- Skapar tabell för platser
+-- Platser
 CREATE TABLE locations (
     locationId INT NOT NULL AUTO_INCREMENT,
     locationName VARCHAR(100) NOT NULL,
@@ -23,17 +24,17 @@ CREATE TABLE locations (
     FOREIGN KEY (cityId) REFERENCES cities(cityId) ON DELETE CASCADE
 );
 
--- Skapar tabell för quests
+-- Quests
 CREATE TABLE quests (
     questId INT NOT NULL AUTO_INCREMENT,
     questName VARCHAR(100) NOT NULL,
     questDescription TEXT NOT NULL,
-    cityId INT,
+    cityId INT NOT NULL,
     PRIMARY KEY (questId),
     FOREIGN KEY (cityId) REFERENCES cities(cityId) ON DELETE CASCADE
 );
 
--- Skapar tabell för ledtrådar
+-- Ledtrådar
 CREATE TABLE clues (
     clueId INT NOT NULL AUTO_INCREMENT,
     clueName VARCHAR(100) NOT NULL,
@@ -41,21 +42,22 @@ CREATE TABLE clues (
     locationId INT,
     questId INT,
     PRIMARY KEY (clueId),
-    FOREIGN KEY (locationId) REFERENCES locations(locationId) ON DELETE CASCADE ,
+    FOREIGN KEY (locationId) REFERENCES locations(locationId) ON DELETE CASCADE,
     FOREIGN KEY (questId) REFERENCES quests(questId) ON DELETE CASCADE
 );
 
--- Skapar tabell för pussel
+-- Pussel (med svar)
 CREATE TABLE puzzles (
     puzzleId INT NOT NULL AUTO_INCREMENT,
     puzzleName VARCHAR(100) NOT NULL,
     puzzleDescription TEXT NOT NULL,
+    puzzleAnswer VARCHAR(100) NOT NULL,
     clueId INT,
     PRIMARY KEY (puzzleId),
     FOREIGN KEY (clueId) REFERENCES clues(clueId) ON DELETE CASCADE
 );
 
--- Skapar tabell för användare
+-- Användare
 CREATE TABLE users (
     userId INT NOT NULL AUTO_INCREMENT,
     userName VARCHAR(100) NOT NULL,
@@ -63,7 +65,7 @@ CREATE TABLE users (
     PRIMARY KEY (userId)
 );
 
--- Skapar tabell för användarens framsteg i quests
+-- Framsteg
 CREATE TABLE userProgress (
     userProgressId INT NOT NULL AUTO_INCREMENT,
     userId INT,
@@ -71,11 +73,11 @@ CREATE TABLE userProgress (
     progress TINYINT UNSIGNED,
     timeLeft INT,
     PRIMARY KEY (userProgressId),
-    FOREIGN KEY (questId) REFERENCES quests(questId) ON DELETE CASCADE ,
+    FOREIGN KEY (questId) REFERENCES quests(questId) ON DELETE CASCADE,
     FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
--- Skapar tabell för belöningar
+-- Belöningar
 CREATE TABLE rewards (
     rewardId INT NOT NULL AUTO_INCREMENT,
     rewardName VARCHAR(100) NOT NULL,
@@ -87,7 +89,7 @@ CREATE TABLE rewards (
     FOREIGN KEY (questId) REFERENCES quests(questId) ON DELETE CASCADE
 );
 
--- Skapar tabell för användarens belöningar
+-- Användarens belöningar
 CREATE TABLE user_rewards (
     userRewardId INT NOT NULL AUTO_INCREMENT,
     userId INT,
@@ -95,26 +97,24 @@ CREATE TABLE user_rewards (
     dateReceived DATETIME,
     isClaimed BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (userRewardId),
-    FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE ,
+    FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
     FOREIGN KEY (rewardId) REFERENCES rewards(rewardId) ON DELETE SET NULL
 );
 
--- Infogar en stad
+-- Data
+
 INSERT INTO cities (cityName, cityDescription, latitude, longitude)
 VALUES ('Gothenburg', 'A city located on the west coast of Sweden, known for its maritime history and beautiful parks.', 57.7089, 11.9746);
 
--- Infogar platser
 INSERT INTO locations (locationName, latitude, longitude, cityId)
 VALUES
 ('Liseberg', 57.7058, 11.9674, 1),
 ('Art Museum Of Gothenburg', 57.7055, 11.9672, 1),
 ('Avenyn', 57.7032, 11.9743, 1);
 
--- Infogar ett quest
 INSERT INTO quests (questName, questDescription, cityId)
 VALUES ('The Gothenburg Treasure Hunt', 'Solve the mystery and discover the treasure hidden around Gothenburg. You will need to visit several landmarks to find clues.', 1);
 
--- Infogar ledtrådar
 INSERT INTO clues (clueName, clueDescription, locationId, questId)
 VALUES
 ('Clue 1', 'Look for the hidden symbol above the door at Feskekörka.', 1, 1),
@@ -122,54 +122,15 @@ VALUES
 ('Clue 3', 'Look for a painting depicting the sea in Göteborgs Konstmuseum.', 3, 1),
 ('Clue 4', 'Walk down Avenyn and look for the bronze plaque with the mysterious symbol.', 3, 1);
 
--- Infogar ett pussel kopplat till en ledtråd
-INSERT INTO puzzles (puzzleName, puzzleDescription, clueId)
-VALUES ('Cipher Puzzle', 'Decode the ancient text found on the monument.', 1);
+-- Pussel med svar kopplat till varje ledtråd
+INSERT INTO puzzles (puzzleName, puzzleDescription, puzzleAnswer, clueId)
+VALUES
+('Cipher Puzzle', 'What is the Swedish word for "fish"?', 'fisk', 1),
+('Number Puzzle', 'What number is hidden at the entrance?', '7', 2),
+('Art Puzzle', 'What color dominates the sea painting?', 'blue', 3),
+('Symbol Puzzle', 'What shape is the mysterious symbol?', 'circle', 4);
 
--- Infogar användare
+-- Exempelanvändare
 INSERT INTO users (userName, userEmail)
 VALUES ('Alice', 'alice@example.com'),
        ('Bob', 'bob@example.com');
-
--- Infogar användarens framsteg
-INSERT INTO userProgress (userId, questId, progress, timeLeft)
-VALUES (1, 1, 0.0, 180),
-       (2, 1, 25.0, 150);
-
--- Infogar belöningar
-INSERT INTO rewards (rewardName, rewardDescription, rewardType, rewardValue, questId)
-VALUES ('Gold Medal', 'Awarded for completing the Gothenburg Treasure Hunt.', 'Physical', 100, 1),
-       ('Extra Clue', 'Extra clue that helps you find the treasure faster.', 'Virtual', 0, 1);
-
--- Infogar användarens belöningar
-INSERT INTO user_rewards (userId, rewardId, dateReceived, isClaimed)
-VALUES (1, 1, NOW(), FALSE),
-       (2, 2, NOW(), TRUE);
-
--- Kontrollera att allting finns i databasen
-SHOW TABLES;
-SELECT * FROM locations;
-SELECT * FROM cities;
-SELECT * FROM quests;
-SELECT * FROM clues;
-SELECT * FROM puzzles;
-SELECT * FROM puzzles;
-
-SELECT questName FROM quests;
-
-SELECT * FROM users;
-SELECT * FROM userProgress;
-
-SELECT quests.*, cities.cityName
-FROM quests
-JOIN cities ON cities.cityId = quests.cityId
-WHERE cities.cityName = 'Gothenburg';
-
-SELECT cities.*, quests.questId, quests.questName
-      FROM cities
-      JOIN quests ON cities.cityId = quests.cityId
-      WHERE cities.cityName = 'Gothenburg';
-
-SELECT * FROM clues WHERE questId = 1;
-
-SELECT * FROM clues WHERE clueId = 1;

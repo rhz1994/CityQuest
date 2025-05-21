@@ -33,9 +33,13 @@ async function getQuestById(req, res) {
   const { questId } = req.params; // Hämta questId från URL-parametrar
 
   try {
-    const [rows] = await db.query("SELECT * FROM quests WHERE questId = ?", [
-      questId,
-    ]);
+    const [rows] = await db.query(
+      `SELECT quests.*, cities.cityName
+       FROM quests
+       JOIN cities ON quests.cityId = cities.cityId
+       WHERE quests.questId = ?`,
+      [questId]
+    );
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "Quest not found" }); // Om inget quest hittas
