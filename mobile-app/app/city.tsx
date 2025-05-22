@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { themeStyles } from "../styles/theme";
+
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -13,6 +15,7 @@ type Quest = {
   questId: number;
   questName: string;
   questShortDescription: string;
+  questIntroImage: string; // Lägg till denna rad!
 };
 
 export default function CityScreen() {
@@ -33,27 +36,40 @@ export default function CityScreen() {
       .catch(() => setLoading(false));
   }, [city]);
 
-  const renderItem = ({ item }: { item: Quest }) => (
+  const renderQuestCard = ({ item }: { item: Quest }) => (
     <TouchableOpacity
-      style={styles.questButton}
+      style={themeStyles.questButton}
       onPress={() =>
         router.push({ pathname: "/quest", params: { questId: item.questId } })
       }
     >
-      <Text style={styles.questName}>{item.questName}</Text>
-      <Text style={styles.questDesc}>{item.questShortDescription}</Text>
+      {item.questIntroImage && (
+        <View style={{ alignItems: "center" }}>
+          <Image
+            source={{ uri: item.questIntroImage }}
+            style={{
+              width: 320,
+              height: 140,
+              borderRadius: 10,
+              marginBottom: 8,
+            }}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+      <Text style={themeStyles.questDesc}>{item.questShortDescription}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Quests in {city}</Text>
+    <View style={themeStyles.container}>
+      <Text style={themeStyles.title}>Quests in {city}</Text>
       {loading ? (
         <ActivityIndicator color="#FFD700" size="large" />
       ) : (
         <FlatList
           data={quests}
-          renderItem={renderItem}
+          renderItem={renderQuestCard}
           keyExtractor={(item) => item.questId.toString()}
           contentContainerStyle={{ paddingVertical: 16 }}
         />
@@ -61,33 +77,3 @@ export default function CityScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    alignItems: "center",
-    padding: 20,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#FFD700",
-    marginBottom: 20,
-  },
-  questButton: {
-    backgroundColor: "#FFD700",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    width: 320,
-    maxWidth: "100%",
-  },
-  questName: {
-    fontWeight: "bold",
-    fontSize: 18,
-    color: "#1f2937",
-    marginBottom: 4,
-  },
-  questDesc: { color: "#333", fontSize: 14 },
-});

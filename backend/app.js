@@ -14,6 +14,7 @@ const usersRoutes = require("./routes/users");
 const rewardsRoutes = require("./routes/rewards");
 
 app.use(express.json());
+app.use("/images", express.static("images"));
 
 app.use(cors());
 // Koppla rutter

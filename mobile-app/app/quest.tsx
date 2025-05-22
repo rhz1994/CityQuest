@@ -1,60 +1,21 @@
-import MapView, { Marker, Callout } from "react-native-maps";
 import React, { useState, useEffect } from "react";
+import MapView, { Marker, Callout } from "react-native-maps";
 import {
   View,
   Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import * as Location from "expo-location";
 import { useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
+import PuzzleModal from "../components/PuzzleModal";
+import ClueModal from "../components/ClueModal";
+import { themeStyles } from "../styles/theme";
 
-const DEV_MODE = true; // Sätt till false för produktion
-
-type Clue = {
-  clueId: number;
-  clueDescription: string;
-  puzzleName: string;
-  puzzleDescription: string;
-  puzzleAnswer: string;
-  locationName: string;
-  locationDescription?: string;
-  latitude: number;
-  longitude: number;
-};
-
-type Quest = {
-  questId: number;
-  questName: string;
-  questLongDescription: string;
-  latitude: number;
-  longitude: number;
-};
-
-function getDistanceMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-) {
-  const toRad = (v: number) => (v * Math.PI) / 180;
-  const R = 6371000; // meter
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+const DEV_MODE = true;
 
 export default function QuestScreen() {
   const params = useLocalSearchParams();
@@ -132,7 +93,7 @@ export default function QuestScreen() {
       return;
     }
     if (DEV_MODE) {
-      // canSolve sätts bara till true när användaren tryckt "Jag hittade platsen!" i DEV_MODE
+      // canSolve sätts bara till true när användaren tryckt "Search for the location!" i DEV_MODE
       return;
     }
     const dist = getDistanceMeters(
@@ -144,7 +105,7 @@ export default function QuestScreen() {
     const isNear = dist < 30;
     setCanSolve(isNear);
 
-    // Vibrera EN gång när man blir nära
+    // Vibrera EN gång när man är nära
     if (isNear && !hasVibrated) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setHasVibrated(true);
@@ -167,7 +128,6 @@ export default function QuestScreen() {
       setError("");
       setAnswer("");
       setModalVisible(false);
-      // Nästa ledtråd visas automatiskt via useEffect nedan
     } else {
       setError("Fel svar, försök igen!");
     }
@@ -178,8 +138,8 @@ export default function QuestScreen() {
     if (solved[current] && current < clues.length - 1) {
       setTimeout(() => {
         setCurrent((i) => i + 1);
-        setModalVisible(true); // Visa ledtråds-modal för nästa steg
-        setCanSolve(false); // Markör/pussel visas först när användaren trycker "Jag hittade platsen"
+        setModalVisible(true);
+        setCanSolve(false);
       }, 1000);
     }
   }, [solved, current, clues.length]);
@@ -189,7 +149,7 @@ export default function QuestScreen() {
 
   if (loading || !quest) {
     return (
-      <View style={styles.centered}>
+      <View style={themeStyles.centered}>
         <ActivityIndicator color="#FFD700" size="large" />
       </View>
     );
@@ -197,7 +157,7 @@ export default function QuestScreen() {
 
   if (!loading && (!quest || clues.length === 0)) {
     return (
-      <View style={styles.centered}>
+      <View style={themeStyles.centered}>
         <Text style={{ color: "#fff" }}>
           Kunde inte ladda quest eller ledtrådar.
         </Text>
@@ -207,9 +167,9 @@ export default function QuestScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Karta som bakgrund */}
+      {/* Karta */}
       <MapView
-        style={StyleSheet.absoluteFill}
+        style={{ flex: 1 }}
         initialRegion={{
           latitude: quest.latitude,
           longitude: quest.longitude,
@@ -218,8 +178,8 @@ export default function QuestScreen() {
         }}
         showsUserLocation
       >
-        {/* Visa markör ENDAST om användaren är nära platsen eller i DEV_MODE */}
-        {canSolve && clues[current] && (
+        {/* Markör för aktuell ledtråd */}
+        {clues[current] && (
           <Marker
             coordinate={{
               latitude: Number(clues[current].latitude),
@@ -253,138 +213,63 @@ export default function QuestScreen() {
       </MapView>
 
       {/* Ledtråds-modal */}
-      <Modal
+      <ClueModal
         visible={modalVisible && !canSolve && !allSolved}
-        transparent
-        animationType="slide"
-      >
-        <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
-            {/* Anta att quest har questLongDescription */}
-            {current === 0 && quest?.questLongDescription && (
-              <Text
-                style={[
-                  styles.clueDesc,
-                  { marginBottom: 18, color: "#444", fontStyle: "italic" },
-                ]}
-              >
-                {quest.questLongDescription}
-              </Text>
-            )}
-            <Text style={styles.clueTitle}>
-              Ledtråd {current + 1} av {clues.length}
-            </Text>
-            <Text style={styles.clueDesc}>
-              {clues[current]?.clueDescription}
-            </Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
+        quest={quest}
+        clue={clues[current]}
+        current={current}
+        total={clues.length}
+        DEV_MODE={DEV_MODE}
+        onSearch={() => {
+          setModalVisible(false);
+          if (DEV_MODE) setCanSolve(true);
+        }}
+        onSkip={
+          DEV_MODE
+            ? () => {
+                setSolved((prev) => {
+                  const copy = [...prev];
+                  copy[current] = true;
+                  return copy;
+                });
                 setModalVisible(false);
-                if (DEV_MODE) setCanSolve(true); // I utvecklingsläge: visa markör direkt
-              }}
-            >
-              <Text style={styles.buttonText}>Jag hittade platsen</Text>
-            </TouchableOpacity>
-            {DEV_MODE && (
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  { backgroundColor: "#ca8a04", marginTop: 8 },
-                ]}
-                onPress={() => {
-                  // Låtsas att pusslet är löst och gå till nästa ledtråd
-                  setSolved((prev) => {
-                    const copy = [...prev];
-                    copy[current] = true;
-                    return copy;
-                  });
-                  setModalVisible(false);
-                  setCanSolve(false);
-                  setAnswer("");
-                  setError("");
-                }}
-              >
-                <Text style={[styles.buttonText, { color: "#fff" }]}>
-                  Hoppa till nästa
-                </Text>
-              </TouchableOpacity>
-            )}
-            {!DEV_MODE && (
-              <Text style={{ color: "#888", marginTop: 12, fontSize: 13 }}>
-                Markören visas när du är nära platsen.
-              </Text>
-            )}
-          </View>
-        </View>
-      </Modal>
+                setCanSolve(false);
+                setAnswer("");
+                setError("");
+              }
+            : undefined
+        }
+      />
 
       {/* Pussel-modal */}
-      <Modal
+      <PuzzleModal
         visible={modalVisible && canSolve && !allSolved}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBg}
-          activeOpacity={1}
-          onPressOut={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContent}>
-            {/* Kryss-knapp */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={{ fontSize: 28, color: "#888" }}>×</Text>
-            </TouchableOpacity>
-            {/* Platsens namn och beskrivning */}
-            <Text style={styles.puzzleName}>
-              {clues[current]?.locationName}
-            </Text>
-            {clues[current]?.locationDescription && (
-              <Text style={styles.puzzleDesc}>
-                {clues[current].locationDescription}
-              </Text>
-            )}
-            {/* Pussel */}
-            <Text style={styles.puzzleName}>{clues[current]?.puzzleName}</Text>
-            <Text style={styles.puzzleDesc}>
-              {clues[current]?.puzzleDescription}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ditt svar..."
-              value={answer}
-              onChangeText={setAnswer}
-              autoFocus
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            <TouchableOpacity style={styles.solveButton} onPress={handleSolve}>
-              <Text style={styles.solveButtonText}>Lös pussel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        clue={clues[current]}
+        answer={answer}
+        error={error}
+        onAnswerChange={setAnswer}
+        onSolve={handleSolve}
+        onClose={() => setModalVisible(false)}
+      />
 
       {/* Grattis-modal */}
       <Modal visible={allSolved} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
-            <Text style={styles.title}>Grattis!</Text>
-            <Text style={styles.clueDesc}>Du har klarat alla utmaningar!</Text>
+        <View style={themeStyles.modalBg}>
+          <View style={themeStyles.modalContent}>
+            <Text style={themeStyles.title}>Grattis!</Text>
+            <Text style={themeStyles.clueDesc}>
+              Du har klarat alla ledtrådar och pussel.
+            </Text>
             <TouchableOpacity
-              style={styles.button}
+              style={themeStyles.button}
               onPress={() => {
-                setModalVisible(true); // Visa första ledtråds-modal igen
-                setCurrent(0); // Börja om på första ledtråden
-                setSolved(Array(clues.length).fill(false)); // Nollställ lösta pussel
-                setAnswer(""); // Töm svarsfältet
-                setError(""); // Töm felmeddelande
+                setCurrent(0);
+                setSolved(Array(clues.length).fill(false));
+                setAnswer("");
+                setError("");
               }}
             >
-              <Text style={styles.buttonText}>Avsluta</Text>
+              <Text style={themeStyles.buttonText}>Avsluta</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -393,100 +278,21 @@ export default function QuestScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    alignItems: "center",
-    backgroundColor: "#121212",
-    minHeight: "100%",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#121212",
-  },
-  title: {
-    color: "#FFD700",
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  clueTitle: {
-    fontWeight: "bold",
-    fontSize: 20,
-    color: "#FFD700",
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  clueDesc: {
-    fontSize: 16,
-    color: "#222",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  puzzleName: {
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#ca8a04",
-    marginBottom: 4,
-    marginTop: 8,
-  },
-  puzzleDesc: {
-    fontSize: 15,
-    color: "#444",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  button: {
-    backgroundColor: "#FFD700",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  buttonText: { color: "#222", fontWeight: "bold", fontSize: 18 },
-  modalBg: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 24,
-    width: "85%",
-    alignItems: "center",
-    position: "relative",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#FFD700",
-    borderRadius: 8,
-    padding: 10,
-    width: "100%",
-    marginBottom: 8,
-    fontSize: 16,
-    backgroundColor: "#f9fafb",
-  },
-  error: { color: "red", marginBottom: 8, fontSize: 14 },
-  solveButton: {
-    backgroundColor: "#ca8a04",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  solveButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  closeButton: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    zIndex: 10,
-    padding: 8,
-  },
-});
+// Hjälpfunktion för avståndsberäkning (lägg gärna i en utils-fil)
+function getDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
+  const R = 6371e3;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}

@@ -45,10 +45,13 @@ async function getCluesByQuestId(req, res) {
         puzzles.puzzleId,
         puzzles.puzzleName,
         puzzles.puzzleDescription,
-        puzzles.puzzleAnswer, locations.locationName,
+        puzzles.puzzleAnswer,
+        locations.locationName,
         locations.latitude,
         locations.longitude,
-        locations.locationDescription
+        locations.locationDescription,
+        locations.locationImage
+
       FROM clues
       LEFT JOIN puzzles ON clues.clueId = puzzles.clueId
       LEFT JOIN locations ON clues.locationId = locations.locationId
