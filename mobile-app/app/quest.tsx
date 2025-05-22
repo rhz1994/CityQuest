@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from "react";
+import MapView, { Marker, Callout } from "react-native-maps";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Modal,
+  TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  ScrollView,
+  Alert,
 } from "react-native";
+import * as Location from "expo-location";
 import { useLocalSearchParams } from "expo-router";
+import * as Haptics from "expo-haptics";
+
+const DEV_MODE = true; // Sätt till false för produktion
 
 type Clue = {
   clueId: number;
@@ -17,13 +22,39 @@ type Clue = {
   puzzleName: string;
   puzzleDescription: string;
   puzzleAnswer: string;
+  locationName: string;
+  locationDescription?: string;
+  latitude: number;
+  longitude: number;
 };
 
 type Quest = {
   questId: number;
   questName: string;
-  questDescription: string;
+  questLongDescription: string;
+  latitude: number;
+  longitude: number;
 };
+
+function getDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 6371000; // meter
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export default function QuestScreen() {
   const params = useLocalSearchParams();
@@ -35,11 +66,17 @@ export default function QuestScreen() {
   const [loading, setLoading] = useState(true);
 
   // Modal state
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(true);
   const [current, setCurrent] = useState(0);
   const [solved, setSolved] = useState<boolean[]>([]);
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [canSolve, setCanSolve] = useState(false);
+  const [hasVibrated, setHasVibrated] = useState(false);
 
   useEffect(() => {
     fetch(`http://192.168.1.110:5000/quests/${questId}`)
@@ -56,6 +93,67 @@ export default function QuestScreen() {
       .catch(() => setLoading(false));
   }, [questId]);
 
+  // Hämta användarens position kontinuerligt
+  useEffect(() => {
+    let watcher: Location.LocationSubscription | null = null;
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Platstjänster krävs",
+          "Ge appen tillgång till plats för att spela."
+        );
+        return;
+      }
+      watcher = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Highest,
+          distanceInterval: 1,
+          timeInterval: 1000,
+        },
+        (loc) => {
+          setUserLocation({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+        }
+      );
+    })();
+    return () => {
+      if (watcher) watcher.remove();
+    };
+  }, []);
+
+  // Kolla om användaren är nära platsen för aktuell ledtråd
+  useEffect(() => {
+    if (!userLocation || !clues[current]) {
+      setCanSolve(false);
+      setHasVibrated(false);
+      return;
+    }
+    if (DEV_MODE) {
+      // canSolve sätts bara till true när användaren tryckt "Jag hittade platsen!" i DEV_MODE
+      return;
+    }
+    const dist = getDistanceMeters(
+      userLocation.latitude,
+      userLocation.longitude,
+      clues[current].latitude,
+      clues[current].longitude
+    );
+    const isNear = dist < 30;
+    setCanSolve(isNear);
+
+    // Vibrera EN gång när man blir nära
+    if (isNear && !hasVibrated) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setHasVibrated(true);
+    }
+    if (!isNear && hasVibrated) {
+      setHasVibrated(false); // Återställ om man går bort från platsen
+    }
+  }, [userLocation, clues, current, hasVibrated]);
+
   const handleSolve = () => {
     if (
       answer.trim().toLowerCase() ===
@@ -68,36 +166,26 @@ export default function QuestScreen() {
       });
       setError("");
       setAnswer("");
+      setModalVisible(false);
+      // Nästa ledtråd visas automatiskt via useEffect nedan
     } else {
       setError("Fel svar, försök igen!");
     }
   };
 
-  const next = () => {
-    if (current < clues.length - 1) {
-      setCurrent((i) => i + 1);
-      setAnswer("");
-      setError("");
-    } else {
-      resetModal();
+  // När ett pussel är löst, visa nästa ledtråd automatiskt
+  useEffect(() => {
+    if (solved[current] && current < clues.length - 1) {
+      setTimeout(() => {
+        setCurrent((i) => i + 1);
+        setModalVisible(true); // Visa ledtråds-modal för nästa steg
+        setCanSolve(false); // Markör/pussel visas först när användaren trycker "Jag hittade platsen"
+      }, 1000);
     }
-  };
+  }, [solved, current, clues.length]);
 
-  const prev = () => {
-    if (current > 0) {
-      setCurrent((i) => i - 1);
-      setAnswer("");
-      setError("");
-    }
-  };
-
-  const resetModal = () => {
-    setModalVisible(false);
-    setCurrent(0);
-    setAnswer("");
-    setError("");
-    setSolved(Array(clues.length).fill(false));
-  };
+  // När sista pusslet är löst, visa grattis-modal
+  const allSolved = solved.length > 0 && solved.every(Boolean);
 
   if (loading || !quest) {
     return (
@@ -118,75 +206,190 @@ export default function QuestScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{quest.questName}</Text>
-      <Text style={styles.desc}>{quest.questDescription}</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setModalVisible(true)}
+    <View style={{ flex: 1 }}>
+      {/* Karta som bakgrund */}
+      <MapView
+        style={StyleSheet.absoluteFill}
+        initialRegion={{
+          latitude: quest.latitude,
+          longitude: quest.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+        showsUserLocation
       >
-        <Text style={styles.buttonText}>Starta spel</Text>
-      </TouchableOpacity>
+        {/* Visa markör ENDAST om användaren är nära platsen eller i DEV_MODE */}
+        {canSolve && clues[current] && (
+          <Marker
+            coordinate={{
+              latitude: Number(clues[current].latitude),
+              longitude: Number(clues[current].longitude),
+            }}
+            title={clues[current].locationName}
+            description={clues[current].clueDescription}
+            onPress={() => setModalVisible(true)}
+          >
+            <Callout tooltip onPress={() => setModalVisible(true)}>
+              <View
+                style={{
+                  backgroundColor: "#FFD700",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  borderColor: "#ca8a04",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "#222", fontWeight: "bold", fontSize: 16 }}
+                >
+                  Tryck här för pussel!
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
+        )}
+      </MapView>
 
-      {/* Modal för ledtråd + pussel */}
-      <Modal visible={modalVisible} transparent animationType="slide">
+      {/* Ledtråds-modal */}
+      <Modal
+        visible={modalVisible && !canSolve && !allSolved}
+        transparent
+        animationType="slide"
+      >
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.closeButton} onPress={resetModal}>
-              <Text style={{ fontSize: 28, color: "#888" }}>×</Text>
-            </TouchableOpacity>
+            {/* Anta att quest har questLongDescription */}
+            {current === 0 && quest?.questLongDescription && (
+              <Text
+                style={[
+                  styles.clueDesc,
+                  { marginBottom: 18, color: "#444", fontStyle: "italic" },
+                ]}
+              >
+                {quest.questLongDescription}
+              </Text>
+            )}
             <Text style={styles.clueTitle}>
               Ledtråd {current + 1} av {clues.length}
             </Text>
             <Text style={styles.clueDesc}>
-              {clues[current].clueDescription}
+              {clues[current]?.clueDescription}
             </Text>
-            <Text style={styles.puzzleName}>{clues[current].puzzleName}</Text>
-            <Text style={styles.puzzleDesc}>
-              {clues[current].puzzleDescription}
-            </Text>
-            {!solved[current] ? (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ditt svar..."
-                  value={answer}
-                  onChangeText={setAnswer}
-                  autoFocus
-                />
-                {error ? <Text style={styles.error}>{error}</Text> : null}
-                <TouchableOpacity
-                  style={styles.solveButton}
-                  onPress={handleSolve}
-                >
-                  <Text style={styles.solveButtonText}>Lös pussel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <Text style={styles.solvedText}>Du har löst denna ledtråd!</Text>
-            )}
-            <View style={styles.modalNav}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                setModalVisible(false);
+                if (DEV_MODE) setCanSolve(true); // I utvecklingsläge: visa markör direkt
+              }}
+            >
+              <Text style={styles.buttonText}>Jag hittade platsen</Text>
+            </TouchableOpacity>
+            {DEV_MODE && (
               <TouchableOpacity
-                onPress={prev}
-                disabled={current === 0}
-                style={[styles.navButton, current === 0 && { opacity: 0.5 }]}
+                style={[
+                  styles.button,
+                  { backgroundColor: "#ca8a04", marginTop: 8 },
+                ]}
+                onPress={() => {
+                  // Låtsas att pusslet är löst och gå till nästa ledtråd
+                  setSolved((prev) => {
+                    const copy = [...prev];
+                    copy[current] = true;
+                    return copy;
+                  });
+                  setModalVisible(false);
+                  setCanSolve(false);
+                  setAnswer("");
+                  setError("");
+                }}
               >
-                <Text style={styles.navButtonText}>Föregående</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={next}
-                disabled={!solved[current]}
-                style={[styles.navButton, !solved[current] && { opacity: 0.5 }]}
-              >
-                <Text style={styles.navButtonText}>
-                  {current === clues.length - 1 ? "Stäng" : "Nästa"}
+                <Text style={[styles.buttonText, { color: "#fff" }]}>
+                  Hoppa till nästa
                 </Text>
               </TouchableOpacity>
-            </View>
+            )}
+            {!DEV_MODE && (
+              <Text style={{ color: "#888", marginTop: 12, fontSize: 13 }}>
+                Markören visas när du är nära platsen.
+              </Text>
+            )}
           </View>
         </View>
       </Modal>
-    </ScrollView>
+
+      {/* Pussel-modal */}
+      <Modal
+        visible={modalVisible && canSolve && !allSolved}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBg}
+          activeOpacity={1}
+          onPressOut={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            {/* Kryss-knapp */}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={{ fontSize: 28, color: "#888" }}>×</Text>
+            </TouchableOpacity>
+            {/* Platsens namn och beskrivning */}
+            <Text style={styles.puzzleName}>
+              {clues[current]?.locationName}
+            </Text>
+            {clues[current]?.locationDescription && (
+              <Text style={styles.puzzleDesc}>
+                {clues[current].locationDescription}
+              </Text>
+            )}
+            {/* Pussel */}
+            <Text style={styles.puzzleName}>{clues[current]?.puzzleName}</Text>
+            <Text style={styles.puzzleDesc}>
+              {clues[current]?.puzzleDescription}
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ditt svar..."
+              value={answer}
+              onChangeText={setAnswer}
+              autoFocus
+            />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <TouchableOpacity style={styles.solveButton} onPress={handleSolve}>
+              <Text style={styles.solveButtonText}>Lös pussel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Grattis-modal */}
+      <Modal visible={allSolved} transparent animationType="slide">
+        <View style={styles.modalBg}>
+          <View style={styles.modalContent}>
+            <Text style={styles.title}>Grattis!</Text>
+            <Text style={styles.clueDesc}>Du har klarat alla utmaningar!</Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                setModalVisible(true); // Visa första ledtråds-modal igen
+                setCurrent(0); // Börja om på första ledtråden
+                setSolved(Array(clues.length).fill(false)); // Nollställ lösta pussel
+                setAnswer(""); // Töm svarsfältet
+                setError(""); // Töm felmeddelande
+              }}
+            >
+              <Text style={styles.buttonText}>Avsluta</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -210,31 +413,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "center",
   },
-  desc: { color: "#fff", fontSize: 16, marginBottom: 24, textAlign: "center" },
-  button: {
-    backgroundColor: "#FFD700",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  buttonText: { color: "#222", fontWeight: "bold", fontSize: 18 },
-  modalBg: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 24,
-    width: "85%",
-    alignItems: "center",
-    position: "relative",
-  },
-  closeButton: { position: "absolute", top: 10, right: 16, zIndex: 10 },
   clueTitle: {
     fontWeight: "bold",
     fontSize: 20,
@@ -261,6 +439,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
+  button: {
+    backgroundColor: "#FFD700",
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  buttonText: { color: "#222", fontWeight: "bold", fontSize: 18 },
+  modalBg: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 24,
+    width: "85%",
+    alignItems: "center",
+    position: "relative",
+  },
   input: {
     borderWidth: 1,
     borderColor: "#FFD700",
@@ -281,25 +482,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   solveButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  solvedText: {
-    color: "#16a34a",
-    fontWeight: "bold",
-    marginVertical: 12,
-    fontSize: 16,
+  closeButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 10,
+    padding: 8,
   },
-  modalNav: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 12,
-  },
-  navButton: {
-    backgroundColor: "#FFD700",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  navButtonText: { color: "#222", fontWeight: "bold", fontSize: 16 },
 });

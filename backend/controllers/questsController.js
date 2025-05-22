@@ -34,7 +34,7 @@ async function getQuestById(req, res) {
 
   try {
     const [rows] = await db.query(
-      `SELECT quests.*, cities.cityName
+      `SELECT quests.*, cities.cityName, cities.latitude, cities.longitude
        FROM quests
        JOIN cities ON quests.cityId = cities.cityId
        WHERE quests.questId = ?`,

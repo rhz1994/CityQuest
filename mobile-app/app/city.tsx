@@ -12,7 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 type Quest = {
   questId: number;
   questName: string;
-  questDescription: string;
+  questShortDescription: string;
 };
 
 export default function CityScreen() {
@@ -41,7 +41,7 @@ export default function CityScreen() {
       }
     >
       <Text style={styles.questName}>{item.questName}</Text>
-      <Text style={styles.questDesc}>{item.questDescription}</Text>
+      <Text style={styles.questDesc}>{item.questShortDescription}</Text>
     </TouchableOpacity>
   );
 
