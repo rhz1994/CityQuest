@@ -43,7 +43,7 @@ export const antiqueMapStyle = [
     elementType: "labels.icon",
     stylers: [{ visibility: "on" }],
   },
-  // Ta bort onödiga element för antik känsla:
+
   {
     featureType: "transit",
     stylers: [{ visibility: "off" }],
