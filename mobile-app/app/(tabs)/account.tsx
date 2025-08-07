@@ -13,7 +13,7 @@ export default function AccountScreen() {
   return (
     <View style={themeStyles.container}>
       <Text style={themeStyles.container}>Mitt Konto</Text>
-      <Text style={themeStyles.clueTitle}>Avklarade quests</Text>{" "}
+      <Text style={themeStyles.clueTitle}>Avklarade quests</Text>
       <FlatList
         data={completedQuests}
         keyExtractor={(item) => item.id.toString()}
@@ -22,14 +22,13 @@ export default function AccountScreen() {
         )}
         ListEmptyComponent={
           <Text style={themeStyles.clueDesc}>
-            {" "}
             Inga avklarade quests än så länge
           </Text>
         }
-      />{" "}
+      />
       <Text style={[themeStyles.clueTitle, { marginTop: 24 }]}>
         Sparade quests
-      </Text>{" "}
+      </Text>
       <FlatList
         data={savedQuests}
         keyExtractor={(item) => item.id.toString()}

@@ -24,12 +24,11 @@ export default function HomeScreen() {
   }, []);
 
   // Hämta plats direkt när sidan monteras
-
   useEffect(() => {
     (async () => {
-      let { status } = await location.requestForegroundPermissionAsync();
+      let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setErrorMsg("Tillstånd nekandes");
+        setErrorMsg("Tillstånd nekades");
         return;
       }
       let loc = await Location.getCurrentPositionAsync({});
@@ -39,42 +38,42 @@ export default function HomeScreen() {
   }, [setLocation]);
 
   // hämtar närmaste stad genom att jämföra plats med data från api.
-
   function getNearestCity(lat: number, lon: number) {
     let minDist = Infinity;
-    let nearest = null;
+    let nearest: City | null = null;
     for (const city of cities) {
       const dist = Math.sqrt(
         Math.pow(city.latitude - lat, 2) + Math.pow(city.longitude - lon, 2)
       );
       if (dist < minDist) {
-        (minDist = dist), (nearest = city);
+        minDist = dist;
+        nearest = city;
       }
     }
     return nearest;
   }
 
   // hämtar plats när användaren trycker på knapp
-
   const getLocation = async () => {
-    let { status } = await Location.RequestForegroundPermissionsAsync();
+    let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       setErrorMsg("Tillstånd nekades");
       return;
     }
     let loc = await Location.getCurrentPositionAsync({});
     setLocation(loc);
-    setErrorMsg;
+    setErrorMsg(null);
   };
 
   // renderar varje stad i listan som en knapp.
-  const renderItem = ({ item }: { item: string }) => (
+  const renderItem = ({ item }: { item: City }) => (
     <TouchableOpacity
       style={themeStyles.button}
-      onPress={() => router.push({ pathname: "/city", params: { city: item } })}
+      onPress={() =>
+        router.push({ pathname: "/city", params: { city: item.cityName } })
+      }
     >
-      {" "}
-      <Text style={themeStyles.buttonText}>{item}</Text>
+      <Text style={themeStyles.buttonText}>{item.cityName}</Text>
     </TouchableOpacity>
   );
 
@@ -109,24 +108,24 @@ export default function HomeScreen() {
       <Text style={themeStyles.title}>Välj stad</Text>
       <TouchableOpacity style={themeStyles.button} onPress={getLocation}>
         <Text style={themeStyles.buttonText}>Uppdatera min position</Text>
-      </TouchableOpacity>{" "}
+      </TouchableOpacity>
       {location && (
         <Text style={[themeStyles.clueDesc, { marginBottom: 8 }]}>
           Latitud: {location.coords.latitude}
           {"\n"}
           Longitud: {location.coords.longitude}
         </Text>
-      )}{" "}
-      {errorMsg && <Text style={themeStyles.error}>{errorMsg}</Text>}{" "}
+      )}
+      {errorMsg && <Text style={themeStyles.error}>{errorMsg}</Text>}
       {nearestCity && (
         <Text style={[themeStyles.clueTitle, { marginBottom: 12 }]}>
           Närmaste stad: {nearestCity.cityName}
         </Text>
       )}
       <FlatList
-        data={nearestCity ? [nearestCity.cityName] : []}
+        data={nearestCity ? [nearestCity] : cities}
         renderItem={renderItem}
-        keyExtractor={(item) => item}
+        keyExtractor={(item) => item.cityName}
         contentContainerStyle={{ paddingVertical: 16 }}
       />
     </View>

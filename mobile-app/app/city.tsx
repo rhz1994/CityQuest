@@ -58,13 +58,12 @@ export default function CityScreen() {
             resizeMode="cover"
           />
         </View>
-      )}{" "}
+      )}
       <Text style={themeStyles.questDesc}>{item.questShortDescription}</Text>
     </TouchableOpacity>
   );
   return (
     <View style={themeStyles.container}>
-      {" "}
       <Text style={themeStyles.title}>Quests i {city}</Text>
       {loading ? (
         <ActivityIndicator color="#FFD700" size="large" />

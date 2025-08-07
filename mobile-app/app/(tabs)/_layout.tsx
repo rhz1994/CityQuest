@@ -46,9 +46,9 @@ export default function Layout() {
           }}
         >
           CityQuest
-        </Text>{" "}
+        </Text>
         <TouchableOpacity>
-          <FontAwesome5 name="user-circle" size={26} color="#bfa76a" />{" "}
+          <FontAwesome5 name="user-circle" size={26} color="#bfa76a" />
         </TouchableOpacity>
       </View>
 
@@ -74,7 +74,6 @@ export default function Layout() {
           },
         }}
       >
-        {" "}
         <Tabs.Screen
           name="index"
           options={{
@@ -96,7 +95,7 @@ export default function Layout() {
               />
             ),
           }}
-        />{" "}
+        />
         <Tabs.Screen
           name="scoreboard"
           options={{
@@ -105,7 +104,7 @@ export default function Layout() {
               <FontAwesome5 name="crown" size={size - 2} color={color} />
             ),
           }}
-        />{" "}
+        />
         <Tabs.Screen
           name="account"
           options={{

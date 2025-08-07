@@ -10,7 +10,6 @@ export default function MapScreen() {
   if (!location) {
     return (
       <View style={{ flex: 1 }}>
-        {/* Visa loading eller default-region här om så önskas */}
       </View>
     );
   }
@@ -20,7 +19,6 @@ export default function MapScreen() {
       <MapView
         style={StyleSheet.absoluteFill}
         customMapStyle={antiqueMapStyle}
-        provider="google"
         initialRegion={{
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
