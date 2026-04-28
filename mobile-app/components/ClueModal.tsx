@@ -1,9 +1,12 @@
 import React from "react";
 import { Modal, View, Text, Image, TouchableOpacity } from "react-native";
 import { themeStyles } from "../styles/theme";
+import { colors } from "../styles/tokens";
 import { Ionicons } from "@expo/vector-icons";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ClueModal({ ...props }) {
+  const { t } = useLanguage();
   if (!props.clue) return null;
 
   return (
@@ -14,8 +17,10 @@ export default function ClueModal({ ...props }) {
           <TouchableOpacity
             onPress={props.onClose}
             style={themeStyles.closeButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("clue.closeA11y")}
           >
-            <Ionicons name="close" size={24} color="#bfa76a" />
+            <Ionicons name="close" size={24} color={colors.accentGold} />
           </TouchableOpacity>
 
           {props.current === 0 && (
@@ -41,13 +46,18 @@ export default function ClueModal({ ...props }) {
           )}
 
           <Text style={themeStyles.clueTitle}>
-            Ledtråd {props.current + 1} av {props.total}
+            {t("clue.progress", { current: props.current + 1, total: props.total })}
           </Text>
 
           <Text style={themeStyles.clueDesc}>{props.clue.clueDescription}</Text>
 
-          <TouchableOpacity style={themeStyles.button} onPress={props.onSearch}>
-            <Text style={themeStyles.buttonText}>Search for the location</Text>
+          <TouchableOpacity
+            style={themeStyles.button}
+            onPress={props.onSearch}
+            accessibilityRole="button"
+            accessibilityLabel={t("clue.searchLocationA11y")}
+          >
+            <Text style={themeStyles.buttonText}>{t("clue.searchLocation")}</Text>
           </TouchableOpacity>
 
           {!props.DEV_MODE && (
@@ -55,7 +65,7 @@ export default function ClueModal({ ...props }) {
               style={[
                 themeStyles.clueDesc,
                 {
-                  color: "#888",
+                  color: colors.textMuted,
                   marginTop: 12,
                   fontSize: 13,
                   backgroundColor: "transparent",
@@ -64,7 +74,7 @@ export default function ClueModal({ ...props }) {
                 },
               ]}
             >
-              Markören visas när du är nära platsen.
+              {t("clue.markerHint")}
             </Text>
           )}
         </View>

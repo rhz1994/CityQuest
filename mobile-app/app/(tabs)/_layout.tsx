@@ -1,14 +1,19 @@
 import { Tabs } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   FontAwesome5,
   MaterialCommunityIcons,
   Ionicons,
 } from "@expo/vector-icons";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { colors } from "../../styles/tokens";
+import { useLanguage } from "../../context/LanguageContext";
 // import { useAuth } from "../../context/AuthContext";
 // import LoginScreen from "../login";
 
 export default function Layout() {
+  const router = useRouter();
+  const { t } = useLanguage();
   // Ordna log in senare
   // const { user } = useAuth();
 
@@ -25,20 +30,29 @@ export default function Layout() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#18191a",
+          backgroundColor: colors.bgSurface,
           paddingTop: 38, // för statusbar
           paddingBottom: 10,
           paddingHorizontal: 18,
           borderBottomWidth: 2,
-          borderBottomColor: "#bfa76a",
+          borderBottomColor: colors.accentGold,
         }}
       >
-        <TouchableOpacity>
-          <Ionicons name="menu" size={28} color="#bfa76a" />
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t("topbar.menu")}
+          onPress={() =>
+            Alert.alert(
+              t("topbar.menuSoonTitle"),
+              t("topbar.menuSoonBody"),
+            )
+          }
+        >
+          <Ionicons name="menu" size={28} color={colors.accentGold} />
         </TouchableOpacity>
         <Text
           style={{
-            color: "#bfa76a",
+            color: colors.accentGold,
             fontFamily: "serif",
             fontSize: 22,
             fontWeight: "bold",
@@ -47,20 +61,24 @@ export default function Layout() {
         >
           CityQuest
         </Text>
-        <TouchableOpacity>
-          <FontAwesome5 name="user-circle" size={26} color="#bfa76a" />
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t("topbar.account")}
+          onPress={() => router.navigate("/(tabs)/account")}
+        >
+          <FontAwesome5 name="user-circle" size={26} color={colors.accentGold} />
         </TouchableOpacity>
       </View>
 
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#bfa76a",
-          tabBarInactiveTintColor: "#e0e0d6",
+          tabBarActiveTintColor: colors.accentGold,
+          tabBarInactiveTintColor: colors.textPrimary,
           tabBarStyle: {
-            backgroundColor: "#18191a",
+            backgroundColor: colors.bgSurface,
             borderTopWidth: 3,
-            borderTopColor: "#bfa76a", //Borde bli guld?
+            borderTopColor: colors.accentGold,
 
             height: 70,
             paddingBottom: 8,
@@ -77,7 +95,7 @@ export default function Layout() {
         <Tabs.Screen
           name="index"
           options={{
-            tabBarLabel: "Start",
+            tabBarLabel: t("tabs.home"),
             tabBarIcon: ({ color, size }) => (
               <FontAwesome5 name="compass" size={size - 2} color={color} />
             ),
@@ -86,7 +104,7 @@ export default function Layout() {
         <Tabs.Screen
           name="map"
           options={{
-            tabBarLabel: "Karta",
+            tabBarLabel: t("tabs.map"),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="map-search-outline"
@@ -99,7 +117,7 @@ export default function Layout() {
         <Tabs.Screen
           name="scoreboard"
           options={{
-            tabBarLabel: "Scoreboard",
+            tabBarLabel: t("tabs.scoreboard"),
             tabBarIcon: ({ color, size }) => (
               <FontAwesome5 name="crown" size={size - 2} color={color} />
             ),
@@ -108,7 +126,7 @@ export default function Layout() {
         <Tabs.Screen
           name="account"
           options={{
-            tabBarLabel: "Konto",
+            tabBarLabel: t("tabs.account"),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="book-open-variant"

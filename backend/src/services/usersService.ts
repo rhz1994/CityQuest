@@ -22,9 +22,10 @@ export const createUser = async (
   userName: string,
   userEmail: string,
 ): Promise<number> => {
+  const providerUserId = `email:${userEmail.toLowerCase()}`;
   const [result] = await database.query<ResultSetHeader>(
-    "INSERT INTO users (userName, userEmail) VALUES (?, ?)",
-    [userName, userEmail],
+    "INSERT INTO users (userName, userEmail, authProvider, authProviderUserId, emailVerifiedAt, lastLoginAt) VALUES (?, ?, 'email', ?, NOW(), NOW())",
+    [userName, userEmail, providerUserId],
   );
   return result.insertId;
 };

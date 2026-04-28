@@ -7,7 +7,9 @@ import {
 } from "../services/usersService.ts";
 
 export const getUserProfileController = async (req: Request, res: Response) => {
-  const { name } = req.params;
+  const nameParam = req.params.name;
+  const name = Array.isArray(nameParam) ? nameParam[0] : nameParam;
+  if (!name) return res.status(400).json({ error: "User name is required" });
   try {
     const user = await getUserByName(name);
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -39,11 +41,20 @@ export const createUserController = async (req: Request, res: Response) => {
 
 export const updateUserController = async (req: Request, res: Response) => {
   const userId = Number(req.params.id);
+  const authUserId = Number(res.locals.authUserId);
   const { userName, userEmail } = req.body as {
     userName: string;
     userEmail: string;
   };
   if (isNaN(userId)) return res.status(400).json({ error: "Invalid user ID" });
+  if (!Number.isFinite(authUserId) || authUserId <= 0) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (authUserId !== userId) {
+    return res
+      .status(403)
+      .json({ error: "Cannot update another user's profile" });
+  }
   if (!userName || !userEmail) {
     return res
       .status(400)

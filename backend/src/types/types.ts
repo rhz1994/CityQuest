@@ -69,7 +69,13 @@ export interface User {
   userId: number;
   userName: string;
   userEmail: string;
+  authProvider: AuthProvider;
+  authProviderUserId: string;
+  emailVerifiedAt: string | null;
+  lastLoginAt: string | null;
 }
+
+export type AuthProvider = "email" | "google" | "apple";
 
 // ─── UserProgress ────────────────────────────────────────────────────────────
 export interface UserProgress {

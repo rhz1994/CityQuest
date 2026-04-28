@@ -7,21 +7,16 @@
     "icon": "./assets/images/icon.png",
     "scheme": "cityquest",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
+      "package": "com.cityquest.app.dev",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cityquest.app.dev"
     },
     "plugins": [
       "expo-router",
@@ -40,6 +35,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1ab208be-5d97-45a7-b665-b84cf4517276"
+      }
+    },
+    "owner": "rasmus1994"
   }
 }

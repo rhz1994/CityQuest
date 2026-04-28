@@ -17,7 +17,9 @@ export const getCitiesController = async (_req: Request, res: Response) => {
 };
 
 export const getCityByNameController = async (req: Request, res: Response) => {
-  const { cityName } = req.params;
+  const cityNameParam = req.params.cityName;
+  const cityName = Array.isArray(cityNameParam) ? cityNameParam[0] : cityNameParam;
+  if (!cityName) return res.status(400).json({ error: "City name is required" });
   try {
     const city = await getCityByName(cityName);
     if (!city) return res.status(404).json({ error: "City not found" });

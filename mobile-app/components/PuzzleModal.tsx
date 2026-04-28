@@ -1,5 +1,6 @@
 import React from "react";
 import { themeStyles } from "../styles/theme";
+import { colors, radius } from "../styles/tokens";
 import {
   Modal,
   View,
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Eller annan ikonkälla
+import { useLanguage } from "../context/LanguageContext";
 
 type PuzzleModalProps = {
   visible: boolean;
@@ -29,6 +31,7 @@ export default function PuzzleModal({
   onSolve,
   onClose,
 }: PuzzleModalProps) {
+  const { t } = useLanguage();
   if (!clue) return null;
 
   return (
@@ -41,8 +44,13 @@ export default function PuzzleModal({
       <View style={themeStyles.modalBg}>
         <View style={themeStyles.modalContent}>
           {/* ❌ Stäng-knapp (kryss) */}
-          <TouchableOpacity onPress={onClose} style={themeStyles.closeButton}>
-            <Ionicons name="close" size={24} color="#bfa76a" />
+          <TouchableOpacity
+            onPress={onClose}
+            style={themeStyles.closeButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("puzzle.closeA11y")}
+          >
+            <Ionicons name="close" size={24} color={colors.accentGold} />
           </TouchableOpacity>
 
           <Text style={themeStyles.puzzleName}>{clue.locationName}</Text>
@@ -59,7 +67,7 @@ export default function PuzzleModal({
               style={{
                 width: 220,
                 height: 120,
-                borderRadius: 12,
+                borderRadius: radius.md,
                 marginBottom: 10,
               }}
               resizeMode="cover"
@@ -71,16 +79,23 @@ export default function PuzzleModal({
 
           <TextInput
             style={themeStyles.input}
-            placeholder="Ditt svar..."
+            placeholder={t("puzzle.answerPlaceholder")}
+            placeholderTextColor={colors.textMuted}
             value={answer}
             onChangeText={onAnswerChange}
             autoFocus
+            accessibilityLabel={t("puzzle.answerA11y")}
           />
 
           {error ? <Text style={themeStyles.error}>{error}</Text> : null}
 
-          <TouchableOpacity style={themeStyles.solveButton} onPress={onSolve}>
-            <Text style={themeStyles.solveButtonText}>Lös pussel</Text>
+          <TouchableOpacity
+            style={themeStyles.solveButton}
+            onPress={onSolve}
+            accessibilityRole="button"
+            accessibilityLabel={t("puzzle.solveA11y")}
+          >
+            <Text style={themeStyles.solveButtonText}>{t("puzzle.solve")}</Text>
           </TouchableOpacity>
         </View>
       </View>

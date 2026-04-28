@@ -23,7 +23,14 @@ export const getUserProgressByUserIdController = async (
   res: Response,
 ) => {
   const userId = Number(req.params.userId);
+  const authUserId = Number(res.locals.authUserId);
   if (isNaN(userId)) return res.status(400).json({ error: "Invalid user ID" });
+  if (!Number.isFinite(authUserId) || authUserId <= 0) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (authUserId !== userId) {
+    return res.status(403).json({ error: "Cannot read another user's progress" });
+  }
   try {
     const progress = await getUserProgressByUserId(userId);
     res.json(progress);
@@ -34,18 +41,21 @@ export const getUserProgressByUserIdController = async (
 };
 
 export const saveProgressController = async (req: Request, res: Response) => {
-  const { userId, questId, clueId } = req.body as {
-    userId: number;
+  const authUserId = Number(res.locals.authUserId);
+  const { questId, clueId } = req.body as {
     questId: number;
     clueId: number;
   };
-  if (!userId || !questId || !clueId) {
+  if (!Number.isFinite(authUserId) || authUserId <= 0) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (!questId || !clueId) {
     return res
       .status(400)
-      .json({ error: "userId, questId and clueId are required" });
+      .json({ error: "questId and clueId are required" });
   }
   try {
-    const id = await saveProgress(userId, questId, clueId);
+    const id = await saveProgress(authUserId, questId, clueId);
     res.status(201).json({ message: "Progress saved", progressId: id });
   } catch (error) {
     console.error(error);

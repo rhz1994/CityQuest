@@ -16,7 +16,14 @@ export const getRewardsByUserIdController = async (
   res: Response,
 ) => {
   const userId = Number(req.params.userId);
+  const authUserId = Number(res.locals.authUserId);
   if (isNaN(userId)) return res.status(400).json({ error: "Invalid user ID" });
+  if (!Number.isFinite(authUserId) || authUserId <= 0) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (authUserId !== userId) {
+    return res.status(403).json({ error: "Cannot read another user's rewards" });
+  }
   try {
     const rewards = await getRewardsByUserId(userId);
     res.json(rewards);

@@ -10,6 +10,7 @@ import puzzlesRoutes from "./src/routes/puzzles.ts";
 import usersRoutes from "./src/routes/users.ts";
 import userProgressRoutes from "./src/routes/userProgress.ts";
 import rewardsRoutes from "./src/routes/rewards.ts";
+import authRoutes from "./src/routes/auth.ts";
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use("/puzzles", puzzlesRoutes);
 app.use("/users", usersRoutes);
 app.use("/userProgress", userProgressRoutes);
 app.use("/rewards", rewardsRoutes);
+app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`City Quest server running on http://localhost:${PORT}`);

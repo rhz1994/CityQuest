@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import MapView, { Marker, Callout } from "react-native-maps";
+import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import API_URL from "../config/api";
 import {
   View,
@@ -15,11 +15,17 @@ import { useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import PuzzleModal from "../components/PuzzleModal";
 import ClueModal from "../components/ClueModal";
+import { useLanguage } from "../context/LanguageContext";
+import {
+  StatusChip,
+  FloatingActionButton,
+} from "../components/ui/AppPrimitives";
 import { themeStyles } from "../styles/theme";
+import { colors, radius, spacing } from "../styles/tokens";
 import { getDistanceMeters } from "../utilities/utils";
 import { antiqueMapStyle } from "../styles/mapStyle";
 
-const DEV_MODE = true;
+const DEV_MODE = process.env.EXPO_PUBLIC_DEV_MODE === "true";
 
 type Quest = {
   questId: number;
@@ -50,6 +56,7 @@ type Clue = {
 };
 
 export default function QuestScreen() {
+  const { t } = useLanguage();
   const params = useLocalSearchParams();
   const questId = Array.isArray(params.questId)
     ? params.questId[0]
@@ -57,6 +64,7 @@ export default function QuestScreen() {
   const [quest, setQuest] = useState<Quest | null>(null);
   const [clues, setClues] = useState<Clue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Modal state
   const [current, setCurrent] = useState(0);
@@ -71,20 +79,28 @@ export default function QuestScreen() {
   const [hasVibrated, setHasVibrated] = useState(false);
   const [showClue, setShowClue] = useState(true);
   const [showPuzzle, setShowPuzzle] = useState(false);
+  const [distanceToClue, setDistanceToClue] = useState<number | null>(null);
+
+  const fetchQuestData = () => {
+    setLoading(true);
+    setFetchError(null);
+    Promise.all([
+      fetch(`${API_URL}/quests/${questId}`).then((res) => res.json()),
+      fetch(`${API_URL}/clues/quest/${questId}`).then((res) => res.json()),
+    ])
+      .then(([questData, cluesData]) => {
+        setQuest(questData);
+        setClues(cluesData);
+        setSolved(Array(cluesData.length).fill(false));
+      })
+      .catch(() => {
+        setFetchError(t("quest.fetchError"));
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetch(`${API_URL}/quests/${questId}`)
-      .then((res) => res.json())
-      .then((data) => setQuest(data));
-
-    fetch(`${API_URL}/clues/quest/${questId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setClues(data);
-        setSolved(Array(data.length).fill(false));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    fetchQuestData();
   }, [questId]);
 
   // Hämta användarens position kontinuerligt
@@ -94,16 +110,16 @@ export default function QuestScreen() {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Platstjänster krävs",
-          "Ge appen tillgång till plats för att spela.",
+          t("quest.locationRequiredTitle"),
+          t("quest.locationRequiredBody"),
         );
         return;
       }
       watcher = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 1,
-          timeInterval: 1000,
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 5,
+          timeInterval: 3000,
         },
         (loc) => {
           setUserLocation({
@@ -135,6 +151,7 @@ export default function QuestScreen() {
       clues[current].latitude,
       clues[current].longitude,
     );
+    setDistanceToClue(dist);
     const isNear = dist < 30;
     setCanSolve(isNear);
 
@@ -170,7 +187,7 @@ export default function QuestScreen() {
       setAnswer("");
       setShowPuzzle(false);
     } else {
-      setError("Fel svar, försök igen!");
+      setError(t("quest.wrongAnswer"));
     }
   };
 
@@ -191,29 +208,38 @@ export default function QuestScreen() {
   // När sista pusslet är löst, visa grattis-modal
   const allSolved = solved.length > 0 && solved.every(Boolean);
 
-  if (loading || !quest) {
+  if (loading) {
     return (
       <View style={themeStyles.centered}>
-        <ActivityIndicator color="#FFD700" size="large" />
+        <ActivityIndicator color={colors.accentGoldSoft} size="large" />
       </View>
     );
   }
 
-  if (!loading && (!quest || clues.length === 0)) {
+  if (fetchError || !quest || clues.length === 0) {
     return (
       <View style={themeStyles.centered}>
-        <Text style={{ color: "#fff" }}>
-          Kunde inte ladda quest eller ledtrådar.
+        <Text style={styles.errorText}>
+          {fetchError ?? t("quest.emptyClues")}
         </Text>
+        <TouchableOpacity
+          style={themeStyles.solveButton}
+          onPress={fetchQuestData}
+          accessibilityRole="button"
+          accessibilityLabel={t("quest.retryLoadA11y")}
+        >
+          <Text style={themeStyles.solveButtonText}>{t("common.retry")}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       {/* Karta */}
       <MapView
-        style={{ flex: 1 }}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
         customMapStyle={antiqueMapStyle}
         initialRegion={{
           latitude: quest.latitude,
@@ -231,7 +257,7 @@ export default function QuestScreen() {
               longitude: Number(clues[current].longitude),
             }}
             title={clues[current].locationName}
-            description={clues[current].clueDescription}
+            description={clues[current].clueDescription ?? undefined}
             onPress={() => {
               if (DEV_MODE) {
                 setShowPuzzle(true);
@@ -249,33 +275,23 @@ export default function QuestScreen() {
               }}
             >
               <View
-                style={{
-                  backgroundColor: "#FFD700",
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: "#ca8a04",
-                  alignItems: "center",
-                }}
+                style={styles.calloutBubble}
               >
-                <Text
-                  style={{ color: "#222", fontWeight: "bold", fontSize: 16 }}
-                >
-                  Tryck här för pussel!
+                <Text style={styles.calloutText}>
+                  {t("quest.callout")}
                 </Text>
               </View>
             </Callout>
           </Marker>
         )}
       </MapView>
-      <View
-        pointerEvents="none"
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          backgroundColor: "rgba(16,21,27,0.22)",
-        }}
-      />
+      <View pointerEvents="none" style={styles.mapOverlay} />
+      {!allSolved && distanceToClue !== null && (
+        <StatusChip
+          text={t("quest.distanceToClue", { meters: Math.round(distanceToClue) })}
+          style={styles.distanceChip}
+        />
+      )}
 
       {/* Ledtråds-modal */}
       <ClueModal
@@ -322,9 +338,9 @@ export default function QuestScreen() {
       <Modal visible={allSolved} transparent animationType="slide">
         <View style={themeStyles.modalBg}>
           <View style={themeStyles.modalContent}>
-            <Text style={themeStyles.title}>Grattis!</Text>
+            <Text style={themeStyles.title}>{t("quest.congratsTitle")}</Text>
             <Text style={themeStyles.clueDesc}>
-              Du har klarat alla ledtrådar och pussel.
+              {t("quest.congratsBody")}
             </Text>
             <TouchableOpacity
               style={themeStyles.button}
@@ -337,7 +353,7 @@ export default function QuestScreen() {
                 setShowPuzzle(false);
               }}
             >
-              <Text style={themeStyles.buttonText}>Avsluta</Text>
+              <Text style={themeStyles.buttonText}>{t("quest.finish")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -345,23 +361,47 @@ export default function QuestScreen() {
 
       {/* Visa ledtråd knapp */}
       {!showClue && !showPuzzle && !allSolved && (
-        <TouchableOpacity
-          style={{
-            position: "absolute",
-            bottom: 30,
-            right: 20,
-            backgroundColor: "#bfa76a",
-            borderRadius: 30,
-            padding: 14,
-            elevation: 4,
-          }}
+        <FloatingActionButton
+          label={t("quest.showClue")}
           onPress={() => setShowClue(true)}
-        >
-          <Text style={{ color: "#232323", fontWeight: "bold" }}>
-            Visa ledtråd
-          </Text>
-        </TouchableOpacity>
+          accessibilityLabel={t("quest.showClue")}
+        />
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  errorText: {
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  calloutBubble: {
+    backgroundColor: colors.accentGoldSoft,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 16,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: colors.accentBorder,
+    alignItems: "center",
+  },
+  calloutText: {
+    color: colors.textDark,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  mapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(16,21,27,0.22)",
+  },
+  distanceChip: {
+    position: "absolute",
+    top: 52,
+  },
+});
