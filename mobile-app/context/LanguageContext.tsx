@@ -7,6 +7,7 @@ type TranslateVars = Record<string, string | number>;
 type LanguageContextValue = {
   language: Language;
   setLanguage: (next: Language) => void;
+  hasSelectedLanguage: boolean;
   t: (key: string, vars?: TranslateVars) => string;
 };
 
@@ -16,13 +17,21 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(undefine
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>("sv");
+  const [hasSelectedLanguage, setHasSelectedLanguage] = useState(false);
 
   useEffect(() => {
     const loadLanguage = async () => {
       try {
         const stored = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-        if (stored === "sv" || stored === "en") {
+        if (
+          stored === "sv" ||
+          stored === "en" ||
+          stored === "da" ||
+          stored === "no" ||
+          stored === "de"
+        ) {
           setLanguageState(stored);
+          setHasSelectedLanguage(true);
         }
       } catch {
         // Keep default language on read errors.
@@ -33,6 +42,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLanguage = (next: Language) => {
     setLanguageState(next);
+    setHasSelectedLanguage(true);
     AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, next).catch(() => {
       // Ignore persistence errors and keep in-memory language.
     });
@@ -42,6 +52,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     () => ({
       language,
       setLanguage,
+      hasSelectedLanguage,
       t: (key, vars = {}) => {
         const entry = translations[language][key] ?? translations.sv[key] ?? key;
         if (typeof entry === "function") {
@@ -50,7 +61,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         return entry;
       },
     }),
-    [language],
+    [hasSelectedLanguage, language],
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

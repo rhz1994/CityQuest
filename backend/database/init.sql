@@ -163,8 +163,8 @@ INSERT INTO locations (cityId, locationName, locationDescription, latitude, long
 INSERT INTO quests (cityId, questName, questShortDescription) VALUES
   (1, 'Gothenburg Adventure', 'Mysterium: Ett förseglat stadsbrev antyder att Göteborgs verkliga uppdrag dolts sedan 1621. Avkoda spåren mellan grundandet, Ostindiska handeln och varvsepokens fall.'),
   (1, 'The Lost Treasure',    'Mysterium: En försvunnen lastjournal från Ostindiska Kompaniet innehåller en kod som pekar mot en dold förmögenhet och en mörklagd maktstrid i Göteborg.'),
-  (2, 'Prague Mysteries',     'Mysterium: En astronomisk kod i Orloj kopplar samman uppror, kungamakt och hemliga ordnar i Prag. Följ spåren innan sanningen försvinner igen.'),
-  (3, 'Rome Riddles',         'Mysterium: En romersk historiker gömde en varning om maktens återkomst i stadens monument. Tolkningen finns i Colosseum, Forum, Pantheon och Trevifontänen.');
+  (2, 'Prague Mysteries',     'Mysterium: Ett bortglömt kodblad från 1400-talet antyder att Prag styrdes genom tidens symboler. Följ spåren från Orloj till Pragborgen och avslöja vem som skrev stadens dolda manus.'),
+  (3, 'Rome Riddles',         'Mysterium: Ett försvunnet fragment ur en romersk krönika varnar för hur makt maskerar sig i monument. Läs stadens sten för sten mellan Colosseum, Forum, Pantheon och Trevifontänen.');
 
 -- Clues for quest 1 (Gothenburg Adventure)
 INSERT INTO clues (questId, locationId, clueDescription, clueOrder) VALUES
@@ -182,17 +182,17 @@ INSERT INTO clues (questId, locationId, clueDescription, clueOrder) VALUES
 
 -- Clues for quest 3 (Prague Mysteries)
 INSERT INTO clues (questId, locationId, clueDescription, clueOrder) VALUES
-  (3, 1, 'Ett pergament markerat med en sol och ett svärd leder till Staromestske namesti. Här börjar jakten på frågan: vem kontrollerade tid, tro och lag i Prag?', 1),
-  (3, 3, 'När klockspelet slår i Orloj framträder nästa mönster. Du måste läsa symbolerna som förenar astronomi, kristen världsbild och politisk legitimitet.', 2),
-  (3, 2, 'På Karlsbron väntar kod tre, gömd bland helgonstatyerna. Spåret binder samman Karl IV:s maktbygge, pilgrimsvägar och stadens offentliga teater.', 3),
-  (3, 4, 'I Pragborgen låses allt upp: mysteriet visar hur dynastier och idéer använde historia som verktyg för att styra framtiden.', 4);
+  (3, 1, 'Du hittar ett kodblad med astronomiska symboler och en avrättningslista från 1600-talet. Börja på Staromestske namesti och förstå hur torget blev scen för både handel och politisk terror.', 1),
+  (3, 3, 'Andra nyckeln aktiveras när Orloj slår. Tyd symbolerna på urtavlan och koppla dem till hur tid, tro och ordning användes för att legitimera makt i staden.', 2),
+  (3, 2, 'Tredje spåret är inhugget i sten vid Karlsbron: ett datum, ett namn, en krona. Lös kopplingen mellan Karl IV:s stadsbygge, helgonkult och kunglig propaganda.', 3),
+  (3, 4, 'Sista låset bryts i Pragborgen. Här knyter du ihop kodbladet och avslöjar hur olika regimer återanvänt samma historiska symboler för att styra Böhmen.', 4);
 
 -- Clues for quest 4 (Rome Riddles)
 INSERT INTO clues (questId, locationId, clueDescription, clueOrder) VALUES
-  (4, 1, 'I Colosseums valv hittar du första kodordet: panem et circenses. Jakten börjar med hur imperiet gjorde underhållning till politiskt vapen.', 1),
-  (4, 4, 'Forum Romanum avslöjar nästa lager: lag, ritual och propaganda i samma rum. Här måste du avgöra när republiken blev ett skådespel.', 2),
-  (4, 2, 'I Pantheon läser du den tredje nyckeln i sten och ljus. Kupolen avslöjar hur teknik, religion och kejsarmakt samverkade för att skapa evighet.', 3),
-  (4, 3, 'Vid Trevifontänen möter antiken den moderna myten. Sista svaret visar hur Rom fortfarande kodar om sitt förflutna för nya generationer.', 4);
+  (4, 1, 'I Colosseums skugga hittar du kodordet panem et circenses tillsammans med ett kejsarsigill. Första uppgiften: förstå varför våld och underhållning blev statlig strategi.', 1),
+  (4, 4, 'I Forum Romanum väntar nästa fragment mellan senatens ruiner och triumfbågarna. Avläs hur lag, religion och propaganda smälte samman när republiken förvandlades.', 2),
+  (4, 2, 'Tredje nyckeln finns i Pantheons geometri: en kupol, ett oculus, ett imperium. Tolkningen visar hur arkitektur användes för att ge makten kosmisk legitimitet.', 3),
+  (4, 3, 'Vid Trevifontänen hittar du den sista koden i barockens teater. Slutrevelationen visar hur modern Romturism fortfarande bygger på antikens berättelser om evig makt.', 4);
 
 -- Puzzles for all clues (1 clue -> 1 puzzle)
 INSERT INTO puzzles (clueId, puzzleName, puzzleDescription, puzzleAnswer) VALUES
@@ -205,10 +205,10 @@ INSERT INTO puzzles (clueId, puzzleName, puzzleDescription, puzzleAnswer) VALUES
   (7,  'Handelns nav', 'Vilken byggnad i Göteborg kopplas direkt till Ostindiska handelns administration? Referens: https://sv.wikipedia.org/wiki/Ostindiska_huset,_G%C3%B6teborg', 'Ostindiska huset'),
   (8,  'Industrins arv', 'I vilken stadsdel ligger Eriksbergskranen, ett tydligt minnesmärke från varvstiden? Referens: https://sv.wikipedia.org/wiki/Eriksbergskranen', 'Eriksberg'),
   (9,  'Maktens torg', 'Vad heter torget där mysteriet i Prag börjar? Referens: https://en.wikipedia.org/wiki/Old_Town_Square_(Prague)', 'Old Town Square'),
-  (10, 'Tidens maskin', 'Vad kallas Prags astronomiska klocka från 1410? Referens: https://en.wikipedia.org/wiki/Prague_astronomical_clock', 'Orloj'),
-  (11, 'Kungens bro', 'Under vilken härskare började Karlsbron byggas år 1357? Referens: https://en.wikipedia.org/wiki/Charles_Bridge', 'Charles IV'),
-  (12, 'Borgen och riket', 'Vad heter borgområdet där böhmiska och habsburgska maktspår möts? Referens: https://en.wikipedia.org/wiki/Prague_Castle', 'Prague Castle'),
-  (13, 'Bröd och skådespel', 'Vad heter amfiteatern som invigdes under Titus år 80 e.Kr.? Referens: https://en.wikipedia.org/wiki/Colosseum', 'Colosseum'),
-  (14, 'Republikens hjärta', 'Vilken plats var centrum för politik och religion i det antika Rom? Referens: https://en.wikipedia.org/wiki/Roman_Forum', 'Roman Forum'),
-  (15, 'Kupolens gåta', 'Vilken byggnad från Hadrianus tid är känd för sitt oculus? Referens: https://en.wikipedia.org/wiki/Pantheon,_Rome', 'Pantheon'),
-  (16, 'Det moderna lagret', 'Vilken 1700-talsfontän avslutar mysteriet och visar hur antikens symboler lever vidare i turism? Referens: https://en.wikipedia.org/wiki/Trevi_Fountain', 'Trevi Fountain');
+  (10, 'Tidens kod', 'Vilket namn har klockan som började installeras 1410 och fortfarande dominerar torget? Referens: https://en.wikipedia.org/wiki/Prague_astronomical_clock', 'Orloj'),
+  (11, 'Kungens datum', 'Vilken härskare lät påbörja Karlsbron år 1357 enligt den kungliga grundläggningen? Referens: https://en.wikipedia.org/wiki/Charles_Bridge', 'Charles IV'),
+  (12, 'Maktens borg', 'Vilket borgkomplex fungerade som maktcentrum för både böhmiska kungar och habsburgare? Referens: https://en.wikipedia.org/wiki/Prague_Castle', 'Prague Castle'),
+  (13, 'Kodord i stenen', 'Vilken arena invigdes under Titus år 80 e.Kr. och blev symbol för panem et circenses? Referens: https://en.wikipedia.org/wiki/Colosseum', 'Colosseum'),
+  (14, 'Lagens scen', 'Vilken plats i Rom band samman senaten, templen och triumfprocessionerna? Referens: https://en.wikipedia.org/wiki/Roman_Forum', 'Roman Forum'),
+  (15, 'Imperiets geometri', 'Vilket monument från Hadrianus tid är känt för sin kupol och sitt oculus? Referens: https://en.wikipedia.org/wiki/Pantheon,_Rome', 'Pantheon'),
+  (16, 'Barockens slutkod', 'Vilken fontän (1732-1762) blir slutpunkt där antik symbolik omtolkas i modern tid? Referens: https://en.wikipedia.org/wiki/Trevi_Fountain', 'Trevi Fountain');

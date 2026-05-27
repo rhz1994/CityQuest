@@ -1,5 +1,4 @@
-import { Tabs } from "expo-router";
-import { useRouter } from "expo-router";
+import { Redirect, Tabs, useRouter } from "expo-router";
 import {
   FontAwesome5,
   MaterialCommunityIcons,
@@ -8,19 +7,20 @@ import {
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { colors } from "../../styles/tokens";
 import { useLanguage } from "../../context/LanguageContext";
-// import { useAuth } from "../../context/AuthContext";
-// import LoginScreen from "../login";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Layout() {
   const router = useRouter();
   const { t } = useLanguage();
-  // Ordna log in senare
-  // const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  // if (!user) {
-  //   // Visa login som helsida ovanpå ALLT
-  //   return <LoginScreen />;
-  // }
+  if (isLoading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Redirect href="/login" />;
+  }
   return (
     <>
       {/* Topbar och tabs visas bara om inloggad */}
@@ -140,15 +140,3 @@ export default function Layout() {
     </>
   );
 }
-
-// Inloggninsmodal
-
-// const styles = StyleSheet.create({
-//   modalOverlay: {
-//     ...StyleSheet.absoluteFillObject,
-//     backgroundColor: "rgba(24,25,26,0.98)", // mörk bakgrund
-//     zIndex: 100,
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-// });
