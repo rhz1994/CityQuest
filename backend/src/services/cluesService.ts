@@ -24,7 +24,6 @@ export const getCluesByQuestId = async (
       puzzles.puzzleId,
       puzzles.puzzleName,
       puzzles.puzzleDescription,
-      puzzles.puzzleAnswer,
       locations.locationName,
       locations.latitude,
       locations.longitude,

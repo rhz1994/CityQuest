@@ -21,10 +21,7 @@ interface AuthContextValue {
   isLoading: boolean;
   signInWithEmail: (input: { userEmail: string; userName?: string }) => Promise<void>;
   signInWithGoogle: (input: {
-    googleSub: string;
-    userEmail: string;
-    userName?: string;
-    emailVerified?: boolean;
+    providerAccessToken: string;
   }) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -85,12 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signInWithGoogle = useCallback(
-    async (input: {
-      googleSub: string;
-      userEmail: string;
-      userName?: string;
-      emailVerified?: boolean;
-    }) => {
+    async (input: { providerAccessToken: string }) => {
       const session = await exchangeGoogleIdentity(input);
       await saveTokens(session.accessToken, session.refreshToken);
       setUser(session.user);

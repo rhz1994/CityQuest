@@ -7,7 +7,7 @@ import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { themeStyles } from "../styles/theme";
 import { colors, spacing } from "../styles/tokens";
 
-const LANGUAGE_OPTIONS: Array<{ code: Language; label: string }> = [
+const LANGUAGE_OPTIONS: { code: Language; label: string }[] = [
   { code: "sv", label: "Svenska" },
   { code: "en", label: "English" },
   { code: "da", label: "Dansk" },

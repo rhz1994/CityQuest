@@ -98,6 +98,7 @@ CREATE TABLE userProgress (
   questId     INT NOT NULL,
   clueId      INT NOT NULL,
   completedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY user_progress_unique_step (userId, questId, clueId),
   FOREIGN KEY (userId)  REFERENCES users(userId)   ON DELETE CASCADE,
   FOREIGN KEY (questId) REFERENCES quests(questId) ON DELETE CASCADE,
   FOREIGN KEY (clueId)  REFERENCES clues(clueId)   ON DELETE CASCADE
@@ -112,6 +113,7 @@ CREATE TABLE rewards (
   questId    INT NOT NULL,
   rewardName VARCHAR(100) NOT NULL,
   awardedAt  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY rewards_unique_quest (userId, questId),
   FOREIGN KEY (userId)  REFERENCES users(userId)   ON DELETE CASCADE,
   FOREIGN KEY (questId) REFERENCES quests(questId) ON DELETE CASCADE
 );

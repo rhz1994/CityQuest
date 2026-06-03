@@ -16,8 +16,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ?? 5000;
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+  : true;
 
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 app.use("/images", express.static("images"));
 

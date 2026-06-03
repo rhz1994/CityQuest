@@ -29,7 +29,8 @@ const parseJsonOrThrow = async (res: Response) => {
 
 const exchangeIdentity = async (input: {
   provider: IdentityProvider;
-  providerUserId: string;
+  providerUserId?: string;
+  providerAccessToken?: string;
   userEmail: string;
   userName?: string;
   emailVerified?: boolean;
@@ -57,17 +58,12 @@ export const exchangeEmailIdentity = async (input: {
 };
 
 export const exchangeGoogleIdentity = async (input: {
-  googleSub: string;
-  userEmail: string;
-  userName?: string;
-  emailVerified?: boolean;
+  providerAccessToken: string;
 }): Promise<AuthSession> => {
   return exchangeIdentity({
     provider: "google",
-    providerUserId: input.googleSub,
-    userEmail: input.userEmail.trim().toLowerCase(),
-    userName: input.userName,
-    emailVerified: input.emailVerified ?? false,
+    providerAccessToken: input.providerAccessToken,
+    userEmail: "",
   });
 };
 
@@ -99,4 +95,35 @@ export const logoutSession = async (refreshToken: string): Promise<void> => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
   });
+};
+
+export const authFetch = async (
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> => {
+  const { readTokens, saveTokens, clearTokens } = await import(
+    "../utilities/secureStorage"
+  );
+  const { accessToken, refreshToken } = await readTokens();
+  if (!accessToken) {
+    throw new Error("Not signed in");
+  }
+
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${accessToken}`);
+  const firstResponse = await fetch(input, { ...init, headers });
+  if (firstResponse.status !== 401 || !refreshToken) {
+    return firstResponse;
+  }
+
+  try {
+    const refreshed = await refreshAuthSession(refreshToken);
+    await saveTokens(refreshed.accessToken, refreshed.refreshToken);
+    const retryHeaders = new Headers(init.headers);
+    retryHeaders.set("Authorization", `Bearer ${refreshed.accessToken}`);
+    return fetch(input, { ...init, headers: retryHeaders });
+  } catch {
+    await clearTokens();
+    throw new Error("Session expired");
+  }
 };

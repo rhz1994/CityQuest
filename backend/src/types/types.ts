@@ -52,7 +52,6 @@ export interface ClueWithDetails extends Clue {
   puzzleId: number | null;
   puzzleName: string | null;
   puzzleDescription: string | null;
-  puzzleAnswer: string | null;
 }
 
 // ─── Puzzle ──────────────────────────────────────────────────────────────────
@@ -61,7 +60,6 @@ export interface Puzzle {
   clueId: number;
   puzzleName: string | null;
   puzzleDescription: string | null;
-  puzzleAnswer: string | null;
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

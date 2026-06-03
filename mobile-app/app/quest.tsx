@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import API_URL from "../config/api";
+import { authFetch } from "../services/authService";
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import * as Haptics from "expo-haptics";
 import PuzzleModal from "../components/PuzzleModal";
 import ClueModal from "../components/ClueModal";
 import { useLanguage } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 import {
   StatusChip,
   FloatingActionButton,
@@ -52,11 +54,11 @@ type Clue = {
   puzzleId: number | null;
   puzzleName: string | null;
   puzzleDescription: string | null;
-  puzzleAnswer: string | null;
 };
 
 export default function QuestScreen() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const params = useLocalSearchParams();
   const questId = Array.isArray(params.questId)
     ? params.questId[0]
@@ -81,27 +83,47 @@ export default function QuestScreen() {
   const [showPuzzle, setShowPuzzle] = useState(false);
   const [distanceToClue, setDistanceToClue] = useState<number | null>(null);
 
-  const fetchQuestData = () => {
+  const fetchQuestData = useCallback(() => {
     setLoading(true);
     setFetchError(null);
     Promise.all([
       fetch(`${API_URL}/quests/${questId}`).then((res) => res.json()),
       fetch(`${API_URL}/clues/quest/${questId}`).then((res) => res.json()),
+      user
+        ? authFetch(`${API_URL}/userProgress/user/${user.userId}`).then((res) =>
+            res.ok ? res.json() : [],
+          )
+        : Promise.resolve([]),
     ])
-      .then(([questData, cluesData]) => {
+      .then(([questData, cluesData, progressData]) => {
         setQuest(questData);
         setClues(cluesData);
-        setSolved(Array(cluesData.length).fill(false));
+        const completedClueIds = new Set(
+          progressData
+            .filter(
+              (item: { questId: number }) =>
+                Number(item.questId) === Number(questId),
+            )
+            .map((item: { clueId: number }) => Number(item.clueId)),
+        );
+        const solvedState = cluesData.map((clue: Clue) =>
+          completedClueIds.has(Number(clue.clueId)),
+        );
+        setSolved(solvedState);
+        const firstOpenIndex = solvedState.findIndex(
+          (isSolved: boolean) => !isSolved,
+        );
+        setCurrent(firstOpenIndex >= 0 ? firstOpenIndex : 0);
       })
       .catch(() => {
         setFetchError(t("quest.fetchError"));
       })
       .finally(() => setLoading(false));
-  };
+  }, [questId, t, user]);
 
   useEffect(() => {
     fetchQuestData();
-  }, [questId]);
+  }, [fetchQuestData]);
 
   // Hämta användarens position kontinuerligt
   useEffect(() => {
@@ -132,7 +154,7 @@ export default function QuestScreen() {
     return () => {
       if (watcher) watcher.remove();
     };
-  }, []);
+  }, [t]);
 
   // Kolla om användaren är nära platsen för aktuell ledtråd
   useEffect(() => {
@@ -173,11 +195,32 @@ export default function QuestScreen() {
     }
   }, [canSolve]);
 
-  const handleSolve = () => {
-    if (
-      answer.trim().toLowerCase() ===
-      (clues[current].puzzleAnswer || "").trim().toLowerCase()
-    ) {
+  const handleSolve = async () => {
+    const clue = clues[current];
+    if (!clue?.puzzleId) {
+      setError(t("quest.fetchError"));
+      return;
+    }
+
+    try {
+      const response = await authFetch(`${API_URL}/puzzles/${clue.puzzleId}/solve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answer,
+          latitude: userLocation?.latitude,
+          longitude: userLocation?.longitude,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(
+          typeof payload?.error === "string"
+            ? payload.error
+            : t("quest.wrongAnswer"),
+        );
+        return;
+      }
       setSolved((prev) => {
         const copy = [...prev];
         copy[current] = true;
@@ -186,7 +229,7 @@ export default function QuestScreen() {
       setError("");
       setAnswer("");
       setShowPuzzle(false);
-    } else {
+    } catch {
       setError(t("quest.wrongAnswer"));
     }
   };

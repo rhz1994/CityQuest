@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { themeStyles } from "../styles/theme";
 import API_URL from "../config/api";
 
@@ -31,7 +31,7 @@ export default function CityScreen() {
 
   // hämtar stad
 
-  const fetchQuests = () => {
+  const fetchQuests = useCallback(() => {
     if (!city) return;
     setLoading(true);
     setError(null);
@@ -42,11 +42,11 @@ export default function CityScreen() {
       })
       .catch(() => setError(t("city.fetchError")))
       .finally(() => setLoading(false));
-  };
+  }, [city, t]);
 
   useEffect(() => {
     fetchQuests();
-  }, [city]);
+  }, [fetchQuests]);
 
   const renderQuestCard = ({ item }: { item: Quest }) => (
     <TouchableOpacity

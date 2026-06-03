@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: CityQuest project documentation
+    url: https://github.com/rhz1994/CityQuest
+    about: Check the README and project docs before creating a new issue.

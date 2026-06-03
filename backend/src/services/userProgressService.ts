@@ -25,7 +25,7 @@ export const saveProgress = async (
   clueId: number,
 ): Promise<number> => {
   const [result] = await database.query<ResultSetHeader>(
-    "INSERT INTO userProgress (userId, questId, clueId) VALUES (?, ?, ?)",
+    "INSERT INTO userProgress (userId, questId, clueId) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE completedAt = completedAt",
     [userId, questId, clueId],
   );
   return result.insertId;

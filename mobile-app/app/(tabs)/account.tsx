@@ -1,13 +1,15 @@
-import React, { useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { themeStyles } from "../../styles/theme";
 import { colors } from "../../styles/tokens";
 import { SectionCard } from "../../components/ui/AppPrimitives";
 import { useLanguage } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
+import API_URL from "../../config/api";
+import { authFetch } from "../../services/authService";
 import type { Language } from "../../i18n/translations";
 
-const LANGUAGE_OPTIONS: Array<{
+const LANGUAGE_OPTIONS: {
   code: Language;
   labelKey:
     | "account.languageSwedish"
@@ -15,7 +17,7 @@ const LANGUAGE_OPTIONS: Array<{
     | "account.languageDanish"
     | "account.languageNorwegian"
     | "account.languageGerman";
-}> = [
+}[] = [
   { code: "sv", labelKey: "account.languageSwedish" },
   { code: "en", labelKey: "account.languageEnglish" },
   { code: "da", labelKey: "account.languageDanish" },
@@ -26,12 +28,34 @@ const LANGUAGE_OPTIONS: Array<{
 export default function AccountScreen() {
   const { t, language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
-  // dummy-data
-  const [completedQuests] = useState([
-    { id: 1, title: "Mysteriet i Gamla Stan" },
-    { id: 2, title: "Skattjakten i Slottet" },
-  ]);
-  const [savedQuests] = useState([{ id: 3, title: "Hemliga biblioteket" }]);
+  const [completedQuestIds, setCompletedQuestIds] = useState<number[]>([]);
+  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [progressError, setProgressError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadProgress = async () => {
+      setIsLoadingProgress(true);
+      setProgressError(null);
+      try {
+        const response = await authFetch(`${API_URL}/rewards/user/${user.userId}`);
+        const rewards = (await response.json()) as { questId: number }[];
+        if (!response.ok) {
+          throw new Error("Could not load progress");
+        }
+        setCompletedQuestIds(
+          Array.from(new Set(rewards.map((item) => Number(item.questId)))),
+        );
+      } catch {
+        setProgressError(t("account.progressError"));
+      } finally {
+        setIsLoadingProgress(false);
+      }
+    };
+
+    void loadProgress();
+  }, [t, user]);
 
   return (
     <View style={themeStyles.container}>
@@ -69,27 +93,31 @@ export default function AccountScreen() {
         </View>
       </SectionCard>
       <Text style={themeStyles.clueTitle}>{t("account.completedQuests")}</Text>
-      <FlatList
-        data={completedQuests}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <Text style={themeStyles.questDesc}> • {item.title} </Text>
-        )}
-        ListEmptyComponent={
-          <Text style={themeStyles.clueDesc}>
-            {t("account.emptyCompleted")}
-          </Text>
-        }
-      />
+      {isLoadingProgress ? (
+        <ActivityIndicator color={colors.accentGold} />
+      ) : progressError ? (
+        <Text style={themeStyles.error}>{progressError}</Text>
+      ) : (
+        <FlatList
+          data={completedQuestIds}
+          keyExtractor={(item) => item.toString()}
+          renderItem={({ item }) => (
+            <Text style={themeStyles.questDesc}>Quest #{item}</Text>
+          )}
+          ListEmptyComponent={
+            <Text style={themeStyles.clueDesc}>
+              {t("account.emptyCompleted")}
+            </Text>
+          }
+        />
+      )}
       <Text style={[themeStyles.clueTitle, { marginTop: 24 }]}>
         {t("account.savedQuests")}
       </Text>
       <FlatList
-        data={savedQuests}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <Text style={themeStyles.questDesc}> • {item.title} </Text>
-        )}
+        data={[] as number[]}
+        keyExtractor={(item) => item.toString()}
+        renderItem={({ item }) => <Text style={themeStyles.questDesc}>{item}</Text>}
         ListEmptyComponent={
           <Text style={themeStyles.clueDesc}>{t("account.emptySaved")}</Text>
         }

@@ -14,12 +14,14 @@ export const exchangeSessionController = async (req: Request, res: Response) => 
   const {
     provider,
     providerUserId,
+    providerAccessToken,
     userEmail,
     userName,
     emailVerified,
   } = req.body as {
     provider?: string;
     providerUserId?: string;
+    providerAccessToken?: string;
     userEmail?: string;
     userName?: string;
     emailVerified?: boolean;
@@ -27,13 +29,11 @@ export const exchangeSessionController = async (req: Request, res: Response) => 
 
   if (
     !provider ||
-    !providerValues.includes(provider as AuthProvider) ||
-    !providerUserId ||
-    !userEmail
+    !providerValues.includes(provider as AuthProvider)
   ) {
     return res.status(400).json({
       error:
-        "provider (email|google|apple), providerUserId and userEmail are required",
+        "provider (email|google|apple) is required",
     });
   }
 
@@ -41,6 +41,7 @@ export const exchangeSessionController = async (req: Request, res: Response) => 
     const session = await exchangeIdentityForSession({
       provider: provider as AuthProvider,
       providerUserId,
+      providerAccessToken,
       userEmail,
       userName,
       emailVerified,
@@ -48,7 +49,9 @@ export const exchangeSessionController = async (req: Request, res: Response) => 
     return res.status(200).json(session);
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Could not exchange identity" });
+    const message =
+      error instanceof Error ? error.message : "Could not exchange identity";
+    return res.status(401).json({ error: message });
   }
 };
 

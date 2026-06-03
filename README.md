@@ -24,198 +24,43 @@ CityQuest/
     │   └── quest.tsx Game screen (map + clues + puzzles)
     ├── components/   Reusable UI (ClueModal, PuzzleModal)
     ├── config/       API URL config
-    ├── context/      React context (Location)
+    ├── context/      React contexts (Auth, Location, Language)
+    ├── services/     API/auth services
     ├── styles/       Theme & map styles
-    └── utilities/    Haversine distance, helpers
+    └── utilities/    Secure token storage, Haversine distance, helpers
 ```
 
 ## How It Works
 
-1. **Home screen** — detects your location, shows the nearest city, or lets you pick one
-2. **City screen** — lists available quests for that city
-3. **Quest screen** — shows a map with clues. Walk to each location in order:
+1. **Login screen** — signs the player in with Google, or dev email login for local testing
+2. **Home screen** — detects your location, shows the nearest city, or lets you pick one
+3. **City screen** — lists available quests for that city
+4. **Quest screen** — shows a map with clues. Walk to each location in order:
    - A **clue** tells you where to go
    - When you're within 30 meters, a **puzzle** appears
-   - Answer correctly to unlock the next clue
-4. **Complete all puzzles** to finish the quest
+   - The app sends the answer and position to the backend
+   - The backend validates the answer, location, clue order, and saves progress
+5. **Complete all puzzles** to finish the quest and receive a reward
 
-## Product Roadmap (Suggested)
+## Current Auth & Security
 
-This is a practical roadmap to expand the app while keeping scope realistic for a small team.
+- **Google sign-in** is the production-ready auth path currently implemented. The mobile app sends a Google access token to `POST /auth/exchange`, and the backend verifies it with Google before issuing CityQuest access and refresh tokens.
+- **Dev email login** exists only for local testing. Enable it with `ALLOW_DEV_EMAIL_AUTH=true` in `backend/.env`. Keep it disabled in production.
+- **Apple login** and **email magic link** are planned but not implemented yet.
+- Access tokens are short-lived JWTs. Refresh tokens are rotated, stored in the database as hashes, and can be revoked.
+- Protected endpoints use `requireAuth`; admin-only content writes use `requireAdmin` and `ADMIN_USER_IDS`.
+- Puzzle answers are no longer returned to the mobile app. Solving happens through `POST /puzzles/:puzzleId/solve`.
+- The backend checks answer correctness, location distance, clue order, duplicate progress, and reward uniqueness.
 
-### Phase 1 (MVP+) — 4 to 6 weeks
+## Product Roadmap
 
-Focus: improve first-session experience and retention basics.
-
-- Guided onboarding (permissions, how the game works, first quest in <2 minutes)
-- Stronger core loop UX (clear clue progression, better success/failure feedback)
-- Basic progression (XP, levels, badges, streak)
-- One additional quest type (for example timed challenge or photo task)
-- Lightweight analytics (new users, quest start/completion, drop-off points)
-
-### Phase 2 (Growth) — 6 to 10 weeks
-
-Focus: replayability and social motivation.
-
-- Daily/weekly quests and seasonal events
-- Leaderboards by city and friends
-- Quest recommendations based on location and previous activity
-- Push notifications for streaks, new quests, and event reminders
-- Internal content tools for creating/editing quests without code changes
-
-### Phase 3 (Scale) — 2 to 4 months
-
-Focus: operations, creator workflows, and broader content coverage.
-
-- Admin dashboard for moderation, analytics, and live operations
-- Creator workflow (draft, review, publish) for UGC or partner-created quests
-- Anti-cheat and location-spoofing mitigation
-- Caching + API performance improvements for larger user load
-- Localization and city expansion playbook
-
-## Authentication Strategy (Recommended)
-
-Short answer: **do not start with Google-only login**.
-
-For a mobile app, the most practical setup is:
-
-- **Email magic link** as the baseline (works for everyone, low support burden)
-- **Google sign-in** as an optional convenience provider
-- **Apple sign-in** when shipping iOS (recommended and often required in practice if social sign-in is offered)
-
-### Why this is the best trade-off
-
-- Better conversion than forcing password creation
-- Lower implementation and maintenance complexity than a custom auth stack
-- Future-proof for adding more providers (Facebook, Microsoft, etc.)
-- Easier account recovery and fewer "which login did I use?" issues if email is always available
-
-### Suggested implementation path
-
-1. Add user identity model (`users` table + provider mapping)
-2. Implement email magic link login flow
-3. Add Google sign-in in the mobile app
-4. Add Apple sign-in before iOS release
-5. Store auth sessions securely (refresh tokens, logout all devices, token rotation)
-
-### Provider options
-
-- **Supabase Auth**: fast to ship, good DX, supports magic link + social providers
-- **Firebase Auth**: mature and well-documented for mobile
-- **Clerk/Auth0**: strong managed features, but can be more complex/costly at scale
-
-If you prefer your current Express backend to remain the source of truth, use one provider above only for identity, then issue your own backend session/JWT after successful provider authentication.
-
-### Technical implementation blueprint (CityQuest)
-
-This blueprint is adapted to the current backend schema (`users`, `userProgress`, `rewards`) and route structure.
-
-#### Recommended provider decision
-
-Pick **Supabase Auth** first for fastest time-to-value:
-
-- Native support for magic links + Google + Apple
-- Good Expo/React Native support
-- Easy to keep Express + MySQL as the game data source of truth
-
-#### Database changes (MySQL)
-
-Keep `users` as the local profile table, but add identity linkage and session metadata.
-
-Suggested migration:
-
-- Add `authProvider` (`email`, `google`, `apple`)
-- Add `authProviderUserId` (provider subject ID, unique)
-- Add `emailVerifiedAt` (nullable datetime)
-- Add `lastLoginAt` (nullable datetime)
-
-Optional but recommended:
-
-- Add `refreshTokens` table for backend-issued sessions (hashed token, device info, expiry, revokedAt)
-
-This lets one user log in safely across multiple devices and supports "logout all devices".
-
-#### Backend API additions (Express)
-
-Add a dedicated `auth` route group:
-
-- `POST /auth/exchange`  
-  Accept provider token/session proof from mobile app, verify it, then create/update local `users` row and return backend access + refresh tokens.
-- `POST /auth/refresh`  
-  Rotate refresh token and return a new short-lived access token.
-- `POST /auth/logout`  
-  Revoke current refresh token.
-- `POST /auth/logout-all`  
-  Revoke all active refresh tokens for that user.
-- `GET /auth/me`  
-  Return current authenticated user profile (from access token).
-
-Keep existing `/users` routes for profile operations, but require auth for user-specific updates.
-
-#### Auth middleware and security baseline
-
-- Verify backend JWT in middleware for protected endpoints (`userProgress`, `rewards`, profile edits)
-- Do not trust `userId` from request body when token exists; derive from token subject
-- Store refresh tokens hashed in DB (never plaintext)
-- Use short access token TTL (for example 15 minutes) and longer refresh TTL (for example 30 days)
-- Rotate refresh tokens on each refresh request
-
-#### Mobile app (Expo) flow
-
-Suggested folder additions in `mobile-app/`:
-
-- `services/authService.ts` (provider sign-in + backend token exchange)
-- `context/AuthContext.tsx` (session state, sign-in/out, bootstrap)
-- `utilities/secureStorage.ts` (token persistence via SecureStore)
-- `app/(auth)/` (login and callback screens)
-
-User flow:
-
-1. User taps "Continue with email" or "Continue with Google"
-2. Provider auth succeeds in app
-3. App calls `POST /auth/exchange`
-4. Backend returns app tokens + local profile
-5. App stores tokens securely and hydrates `AuthContext`
-6. Protected screens use token-authenticated API calls
-
-#### Rollout plan (safe and incremental)
-
-1. Add DB migration + new auth endpoints
-2. Implement email magic-link login only
-3. Protect write endpoints (`userProgress`, `rewards`, `users/:id`)
-4. Add Google login in app
-5. Add Apple login before iOS release
-6. Remove legacy anonymous flows (if any) after data migration
-
-#### Minimal environment variables
-
-Backend:
-
-- `JWT_ACCESS_SECRET`
-- `JWT_REFRESH_SECRET`
-- `JWT_ACCESS_TTL_SECONDS`
-- `JWT_REFRESH_TTL_SECONDS`
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY` (if needed for verification strategy)
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only; never expose to mobile app)
-
-Mobile (`EXPO_PUBLIC_*` only):
-
-- `EXPO_PUBLIC_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_API_URL`
-- `EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID` (for Expo/dev-client OAuth flow)
-- `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
-- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
-- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
-
-#### Definition of done for auth v1
-
-- New user can sign in via magic link and reaches app home
-- Returning user stays signed in after app restart
-- Access token expiry is handled automatically via refresh
-- User can sign out and is blocked from protected endpoints
-- Backend no longer accepts arbitrary `userId` writes without auth
+- Email magic-link login for production email auth
+- Apple login before iOS release if social login is offered
+- Admin dashboard for cities, locations, quests, clues, and puzzles
+- Content workflow with draft/review/publish status
+- Leaderboards, XP, badges, and saved quests
+- Rate limiting, audit logging, and stronger anti-cheat signals
+- Database migrations instead of relying only on `init.sql`
 
 ## Getting Started
 
@@ -232,10 +77,18 @@ There are **no real `.env` files in the repo** on purpose: they are listed in `.
 
 | Location | Command | What to set |
 |----------|---------|-------------|
-| `backend/` | `cp .env.example .env` | DB credentials must match `backend/docker-compose.yaml` (defaults are in `.env.example`). |
-| `mobile-app/` | `cp .env.example .env` | Set `EXPO_PUBLIC_API_URL` to your LAN IP + port `5000` for a physical device, or `http://127.0.0.1:5000` for simulator/emulator on the same Mac. |
+| `backend/` | `cp .env.example .env` | DB credentials, JWT secrets, optional `ADMIN_USER_IDS`, and dev-only flags. |
+| `mobile-app/` | `cp .env.example .env` | Set `EXPO_PUBLIC_API_URL` to your LAN IP + port `5000` for a physical device, or `http://127.0.0.1:5000` for simulator/emulator on the same Mac. Add Google OAuth client IDs for Google login. |
 
 After copying, **edit `.env`** if your network, ports, or Docker passwords differ.
+
+Useful development flags:
+
+- `ALLOW_DEV_EMAIL_AUTH=true` lets you test email login locally without passwords.
+- `ALLOW_DEV_QUEST_SOLVE=true` lets you test puzzle solving without being physically near the clue location.
+- `ADMIN_USER_IDS=1,2` marks local users as admins for content-write endpoints.
+
+Keep these disabled or carefully configured in production.
 
 ### 1. Start the database
 
@@ -326,25 +179,40 @@ See Expo’s [development builds introduction](https://docs.expo.dev/develop/dev
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/cities` | All cities |
-| GET | `/cities/:cityName` | City by name |
-| GET | `/cities/id/:id` | City by ID |
-| POST | `/cities` | Create a city |
-| GET | `/quests` | All quests |
-| GET | `/quests/city/:cityName` | Quests for a city |
-| GET | `/quests/:questId` | Quest by ID (includes city coords) |
-| POST | `/quests` | Create a quest |
-| GET | `/clues/quest/:questId` | Clues for a quest (with location + puzzle data) |
-| GET | `/locations/city/:cityId` | Locations in a city |
-| GET | `/puzzles/clue/:clueId` | Puzzles for a clue |
-| GET | `/users/:name` | User profile |
-| POST | `/users` | Create user |
-| PUT | `/users/:id` | Update user |
-| GET | `/userProgress/user/:userId` | User's progress |
-| POST | `/userProgress` | Save progress |
-| GET | `/rewards/user/:userId` | User's rewards |
+| Method | Endpoint | Auth | Admin | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/auth/exchange` | No | No | Exchange a verified provider login for CityQuest tokens. Google is verified server-side; email is dev-only. |
+| POST | `/auth/refresh` | No | No | Rotate refresh token and return a new access/refresh pair. |
+| POST | `/auth/logout` | No | No | Revoke one refresh token. |
+| POST | `/auth/logout-all` | Yes | No | Revoke all refresh tokens for the current user. |
+| GET | `/auth/me` | Yes | No | Current authenticated user. |
+| GET | `/cities` | No | No | All cities. |
+| GET | `/cities/:cityName` | No | No | City by name. |
+| GET | `/cities/id/:id` | No | No | City by ID. |
+| POST | `/cities` | Yes | Yes | Create a city. |
+| GET | `/quests` | No | No | All quests. |
+| GET | `/quests/city/:cityName` | No | No | Quests for a city. |
+| GET | `/quests/:questId` | No | No | Quest by ID, including city coordinates. |
+| POST | `/quests` | Yes | Yes | Create a quest. |
+| GET | `/locations` | No | No | All locations. |
+| GET | `/locations/city/:cityId` | No | No | Locations in a city. |
+| GET | `/locations/:locationId` | No | No | Location by ID. |
+| GET | `/clues` | No | No | All clues. Does not return puzzle answers. |
+| GET | `/clues/quest/:questId` | No | No | Clues for a quest, including location and puzzle metadata. Does not return puzzle answers. |
+| GET | `/clues/:clueId` | No | No | Clue by ID. |
+| GET | `/puzzles` | No | No | All puzzles without answers. |
+| GET | `/puzzles/clue/:clueId` | No | No | Puzzles for a clue without answers. |
+| GET | `/puzzles/:puzzleId` | No | No | Puzzle by ID without answer. |
+| POST | `/puzzles/:puzzleId/solve` | Yes | No | Validate answer, location, clue order, progress, and quest completion. |
+| GET | `/users/:name` | Yes | No | User profile by name. Current user or admin only. |
+| GET | `/users/id/:id` | Yes | No | User profile by ID. Current user or admin only. |
+| POST | `/users` | Yes | Yes | Manually create a user. Normal users are created through auth exchange. |
+| PUT | `/users/:id` | Yes | No | Update own user profile. |
+| GET | `/userProgress` | Yes | Yes | All user progress. |
+| GET | `/userProgress/user/:userId` | Yes | No | Current user's progress. |
+| POST | `/userProgress` | Yes | No | Save progress manually. Prefer puzzle solve flow. |
+| GET | `/rewards` | Yes | Yes | All rewards. |
+| GET | `/rewards/user/:userId` | Yes | No | Current user's rewards. |
 
 ## Tech Stack
 
@@ -362,9 +230,18 @@ See Expo’s [development builds introduction](https://docs.expo.dev/develop/dev
 - **quests** — a quest belongs to a city
 - **clues** — ordered steps in a quest, each linked to a location
 - **puzzles** — trivia questions attached to clues
-- **users** — player accounts
-- **userProgress** — tracks which clues a user has completed
-- **rewards** — awarded when a user finishes a quest
+- **users** — local CityQuest user profiles linked to auth providers
+- **userProgress** — tracks which clues a user has completed; unique per user, quest, and clue
+- **rewards** — awarded when a user finishes a quest; unique per user and quest
+- **refreshTokens** — hashed refresh tokens for backend-issued sessions
+
+If `init.sql` changes after you already created the Docker volume, recreate the local database:
+
+```bash
+cd backend
+docker compose down -v
+docker compose up -d
+```
 
 ## Story Guide (Historical Quest Design)
 

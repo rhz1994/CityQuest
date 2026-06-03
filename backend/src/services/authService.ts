@@ -83,15 +83,16 @@ const mapUser = (row: RowDataPacket): User => ({
 
 export const exchangeIdentityForSession = async (input: {
   provider: AuthProvider;
-  providerUserId: string;
-  userEmail: string;
+  providerAccessToken?: string;
+  providerUserId?: string;
+  userEmail?: string;
   userName?: string;
   emailVerified?: boolean;
 }): Promise<TokenPair & { user: User }> => {
-  // NOTE: In production, verify provider token with Supabase/Auth provider before exchange.
-  const { provider, providerUserId, userEmail, emailVerified } = input;
+  const verifiedIdentity = await verifyProviderIdentity(input);
+  const { provider, providerUserId, userEmail, emailVerified } = verifiedIdentity;
   const fallbackName = userEmail.split("@")[0]?.slice(0, 40) || "player";
-  const userName = (input.userName?.trim() || fallbackName).slice(0, 100);
+  const userName = (verifiedIdentity.userName?.trim() || fallbackName).slice(0, 100);
 
   const [providerRows] = await database.query<RowDataPacket[]>(
     "SELECT * FROM users WHERE authProvider = ? AND authProviderUserId = ? LIMIT 1",
@@ -146,6 +147,68 @@ export const exchangeIdentityForSession = async (input: {
   return { ...tokens, user };
 };
 
+const verifyProviderIdentity = async (input: {
+  provider: AuthProvider;
+  providerAccessToken?: string;
+  providerUserId?: string;
+  userEmail?: string;
+  userName?: string;
+  emailVerified?: boolean;
+}): Promise<{
+  provider: AuthProvider;
+  providerUserId: string;
+  userEmail: string;
+  userName?: string;
+  emailVerified: boolean;
+}> => {
+  if (input.provider === "google") {
+    if (!input.providerAccessToken) {
+      throw new Error("Google access token is required");
+    }
+    const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${input.providerAccessToken}` },
+    });
+    if (!response.ok) {
+      throw new Error("Could not verify Google identity");
+    }
+    const profile = (await response.json()) as {
+      id?: string;
+      email?: string;
+      name?: string;
+      verified_email?: boolean;
+    };
+    if (!profile.id || !profile.email) {
+      throw new Error("Invalid Google identity");
+    }
+    return {
+      provider: "google",
+      providerUserId: profile.id,
+      userEmail: profile.email.trim().toLowerCase(),
+      userName: profile.name,
+      emailVerified: Boolean(profile.verified_email),
+    };
+  }
+
+  if (input.provider === "email") {
+    if (!authConfig.allowDevEmailAuth) {
+      throw new Error("Email auth requires a verified provider token");
+    }
+    if (!input.userEmail) {
+      throw new Error("userEmail is required");
+    }
+    return {
+      provider: "email",
+      providerUserId:
+        input.providerUserId ?? `email:${input.userEmail.trim().toLowerCase()}`,
+      userEmail: input.userEmail.trim().toLowerCase(),
+      userName: input.userName,
+      emailVerified: true,
+    };
+  }
+
+  throw new Error("Apple auth verification is not implemented yet");
+};
+
 export const refreshSession = async (
   refreshToken: string,
 ): Promise<TokenPair & { userId: number }> => {
@@ -165,7 +228,7 @@ export const refreshSession = async (
 
   const tokenHash = hashToken(refreshToken);
   const [rows] = await database.query<RefreshTokenRecord[]>(
-    "SELECT * FROM refreshTokens WHERE tokenHash = ? LIMIT 1",
+    "SELECT * FROM refreshTokens WHERE tokenHash = ? AND expiresAt > NOW() LIMIT 1",
     [tokenHash],
   );
   const tokenRow = rows[0];

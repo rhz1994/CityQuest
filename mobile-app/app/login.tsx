@@ -24,7 +24,6 @@ export default function LoginScreen() {
   const [isSubmittingGoogle, setIsSubmittingGoogle] = useState(false);
 
   const [googleRequest, googleResponse, promptGoogleAuth] = Google.useAuthRequest({
-    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -45,29 +44,7 @@ export default function LoginScreen() {
         setIsSubmittingGoogle(true);
         setErrorMessage(null);
 
-        const profileRes = await fetch(
-          "https://www.googleapis.com/oauth2/v2/userinfo",
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          },
-        );
-        const profile = (await profileRes.json()) as {
-          id?: string;
-          email?: string;
-          name?: string;
-          verified_email?: boolean;
-        };
-
-        if (!profile.id || !profile.email) {
-          throw new Error("Could not fetch Google profile.");
-        }
-
-        await signInWithGoogle({
-          googleSub: profile.id,
-          userEmail: profile.email,
-          userName: profile.name,
-          emailVerified: Boolean(profile.verified_email),
-        });
+        await signInWithGoogle({ providerAccessToken: accessToken });
       } catch (error) {
         setErrorMessage(
           error instanceof Error ? error.message : "Could not sign in with Google.",

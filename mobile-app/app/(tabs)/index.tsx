@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -21,7 +21,7 @@ import {
   SecondaryButton,
   StatusChip,
 } from "../../components/ui/AppPrimitives";
-import { colors, radius, spacing } from "../../styles/tokens";
+import { colors, spacing } from "../../styles/tokens";
 
 const QUICK_GUIDE_DISMISSED_KEY = "cityquest.quickguide.dismissed";
 
@@ -43,7 +43,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { t } = useLanguage();
 
-  const fetchCities = () => {
+  const fetchCities = useCallback(() => {
     setLoadingCities(true);
     setCitiesError(null);
     fetch(`${API_URL}/cities`)
@@ -51,11 +51,11 @@ export default function HomeScreen() {
       .then((data) => setCities(data))
       .catch(() => setCitiesError(t("home.fetchCitiesError")))
       .finally(() => setLoadingCities(false));
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchCities();
-  }, []);
+  }, [fetchCities]);
 
   useEffect(() => {
     const loadGuideState = async () => {
@@ -92,7 +92,7 @@ export default function HomeScreen() {
       setLocation(loc);
       setErrorMsg(null);
     })();
-  }, [setLocation]);
+  }, [setLocation, t]);
 
   // hämtar närmaste stad genom att jämföra plats med data från api.
   function getNearestCity(lat: number, lon: number) {

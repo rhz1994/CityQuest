@@ -5,6 +5,10 @@ import {
   createUser,
   updateUser,
 } from "../services/usersService.ts";
+import { authConfig } from "../config/auth.ts";
+
+const canReadUser = (authUserId: number, targetUserId: number) =>
+  authUserId === targetUserId || authConfig.adminUserIds.includes(authUserId);
 
 export const getUserProfileController = async (req: Request, res: Response) => {
   const nameParam = req.params.name;
@@ -13,6 +17,10 @@ export const getUserProfileController = async (req: Request, res: Response) => {
   try {
     const user = await getUserByName(name);
     if (!user) return res.status(404).json({ error: "User not found" });
+    const authUserId = Number(res.locals.authUserId);
+    if (!canReadUser(authUserId, user.userId)) {
+      return res.status(403).json({ error: "Cannot read another user's profile" });
+    }
     res.json(user);
   } catch (error) {
     console.error(error);
@@ -76,6 +84,10 @@ export const getUserByIdController = async (req: Request, res: Response) => {
   try {
     const user = await getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
+    const authUserId = Number(res.locals.authUserId);
+    if (!canReadUser(authUserId, user.userId)) {
+      return res.status(403).json({ error: "Cannot read another user's profile" });
+    }
     res.json(user);
   } catch (error) {
     console.error(error);
