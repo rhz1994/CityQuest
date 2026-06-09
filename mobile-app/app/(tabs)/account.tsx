@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { themeStyles } from "../../styles/theme";
 import { colors } from "../../styles/tokens";
 import { SectionCard } from "../../components/ui/AppPrimitives";
@@ -25,10 +31,17 @@ const LANGUAGE_OPTIONS: {
   { code: "de", labelKey: "account.languageGerman" },
 ];
 
+type CompletedQuest = {
+  rewardId: number;
+  questId: number;
+  questName: string;
+  questShortDescription: string | null;
+};
+
 export default function AccountScreen() {
   const { t, language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
-  const [completedQuestIds, setCompletedQuestIds] = useState<number[]>([]);
+  const [completedQuests, setCompletedQuests] = useState<CompletedQuest[]>([]);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [progressError, setProgressError] = useState<string | null>(null);
 
@@ -39,14 +52,14 @@ export default function AccountScreen() {
       setIsLoadingProgress(true);
       setProgressError(null);
       try {
-        const response = await authFetch(`${API_URL}/rewards/user/${user.userId}`);
-        const rewards = (await response.json()) as { questId: number }[];
+        const response = await authFetch(
+          `${API_URL}/rewards/user/${user.userId}`,
+        );
+        const rewards = (await response.json()) as CompletedQuest[];
         if (!response.ok) {
           throw new Error("Could not load progress");
         }
-        setCompletedQuestIds(
-          Array.from(new Set(rewards.map((item) => Number(item.questId)))),
-        );
+        setCompletedQuests(rewards);
       } catch {
         setProgressError(t("account.progressError"));
       } finally {
@@ -68,7 +81,9 @@ export default function AccountScreen() {
             style={[themeStyles.solveButton, { marginTop: 12 }]}
             onPress={() => void signOut()}
           >
-            <Text style={themeStyles.solveButtonText}>{t("account.signOut")}</Text>
+            <Text style={themeStyles.solveButtonText}>
+              {t("account.signOut")}
+            </Text>
           </TouchableOpacity>
         </SectionCard>
       ) : null}
@@ -87,7 +102,9 @@ export default function AccountScreen() {
               ]}
               onPress={() => setLanguage(option.code)}
             >
-              <Text style={themeStyles.solveButtonText}>{t(option.labelKey)}</Text>
+              <Text style={themeStyles.solveButtonText}>
+                {t(option.labelKey)}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -99,10 +116,10 @@ export default function AccountScreen() {
         <Text style={themeStyles.error}>{progressError}</Text>
       ) : (
         <FlatList
-          data={completedQuestIds}
-          keyExtractor={(item) => item.toString()}
+          data={completedQuests}
+          keyExtractor={(item) => item.rewardId.toString()}
           renderItem={({ item }) => (
-            <Text style={themeStyles.questDesc}>Quest #{item}</Text>
+            <Text style={themeStyles.questDesc}>{item.questName}</Text>
           )}
           ListEmptyComponent={
             <Text style={themeStyles.clueDesc}>
@@ -117,7 +134,9 @@ export default function AccountScreen() {
       <FlatList
         data={[] as number[]}
         keyExtractor={(item) => item.toString()}
-        renderItem={({ item }) => <Text style={themeStyles.questDesc}>{item}</Text>}
+        renderItem={({ item }) => (
+          <Text style={themeStyles.questDesc}>{item}</Text>
+        )}
         ListEmptyComponent={
           <Text style={themeStyles.clueDesc}>{t("account.emptySaved")}</Text>
         }
