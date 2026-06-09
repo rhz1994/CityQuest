@@ -7,7 +7,10 @@
     "dev": "tsx --watch index.ts",
     "start": "tsx index.ts",
     "build": "tsc",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "migrate": "tsx migrate.ts",
+    "seed": "tsx seed.ts",
+    "test": "vitest run"
   },
   "type": "module",
   "keywords": [],
@@ -30,6 +33,7 @@
     "@eslint/js": "^9.39.2",
     "eslint": "^9.39.2",
     "globals": "^16.5.0",
-    "typescript-eslint": "^8.50.0"
+    "typescript-eslint": "^8.50.0",
+    "vitest": "^4.1.8"
   }
 }
