@@ -4,6 +4,7 @@ import {
   getPuzzleById,
   getPuzzlesByClueId,
   solvePuzzle,
+  createPuzzle,
 } from "../services/puzzlesService.ts";
 
 export const getPuzzlesController = async (_req: Request, res: Response) => {
@@ -77,7 +78,8 @@ export const solvePuzzleController = async (req: Request, res: Response) => {
     }
     return res.status(200).json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not solve puzzle";
+    const message =
+      error instanceof Error ? error.message : "Could not solve puzzle";
     const status =
       message === "Puzzle not found"
         ? 404
@@ -88,5 +90,32 @@ export const solvePuzzleController = async (req: Request, res: Response) => {
           : 500;
     console.error(error);
     return res.status(status).json({ error: message });
+  }
+};
+
+export const createPuzzleController = async (req: Request, res: Response) => {
+  const { clueId, puzzleName, puzzleAnswer, puzzleDescription } = req.body as {
+    clueId: number;
+    puzzleName: string;
+    puzzleAnswer: string;
+    puzzleDescription?: string;
+  };
+  if (!clueId || !puzzleName || !puzzleAnswer) {
+    return res.status(400).json({
+      error:
+        "clueId, puzzleName, puzzleAnswer, and puzzleDescription are required",
+    });
+  }
+  try {
+    const id = await createPuzzle(
+      clueId,
+      puzzleName,
+      puzzleAnswer,
+      puzzleDescription ?? null,
+    );
+    res.status(201).json({ message: "Puzzle created", puzzleId: id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not create puzzle" });
   }
 };

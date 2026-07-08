@@ -86,7 +86,11 @@ export const solvePuzzle = async (input: {
   answer: string;
   latitude?: number;
   longitude?: number;
-}): Promise<{ solved: boolean; progressId: number | null; questComplete: boolean }> => {
+}): Promise<{
+  solved: boolean;
+  progressId: number | null;
+  questComplete: boolean;
+}> => {
   const [rows] = await database.query<PuzzleSolveRow[]>(
     `SELECT
       puzzles.puzzleId,
@@ -187,4 +191,17 @@ export const solvePuzzle = async (input: {
       Number(completionRows[0]?.completedClues ?? 0) >=
         Number(completionRows[0]?.totalClues ?? 0),
   };
+};
+
+export const createPuzzle = async (
+  clueId: number,
+  puzzleName: string,
+  puzzleAnswer: string,
+  puzzleDescription: string | null,
+): Promise<number> => {
+  const [result] = await database.query<ResultSetHeader>(
+    "INSERT INTO puzzles (clueId, puzzleName, puzzleAnswer, puzzleDescription) VALUES (?, ?, ?, ?)",
+    [clueId, puzzleName, puzzleAnswer, puzzleDescription],
+  );
+  return result.insertId;
 };

@@ -1,5 +1,5 @@
 import { database } from "../../database.ts";
-import type { RowDataPacket } from "mysql2";
+import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import type { Clue, ClueWithDetails } from "../types/types.ts";
 
 export const getClues = async (): Promise<Clue[]> => {
@@ -37,4 +37,30 @@ export const getCluesByQuestId = async (
     [questId],
   );
   return rows as ClueWithDetails[];
+};
+
+export const createClue = async (
+  questId: number,
+  locationId: number,
+  clueDescription: string,
+  clueOrder: number,
+): Promise<number> => {
+  const [result] = await database.query<ResultSetHeader>(
+    "INSERT INTO clues (questId, locationId, clueDescription, clueOrder) VALUES (?, ?, ?, ?)",
+    [questId, locationId, clueDescription, clueOrder],
+  );
+  return result.insertId;
+};
+
+export const createPuzzle = async (
+  clueId: number,
+  puzzleName: string,
+  puzzleAnswer: string,
+  puzzleDescription: string | null,
+): Promise<number> => {
+  const [result] = await database.query<ResultSetHeader>(
+    "INSERT INTO puzzles (clueId, puzzleName, puzzleAnswer, puzzleDescription) VALUES (?, ?, ?, ?)",
+    [clueId, puzzleName, puzzleAnswer, puzzleDescription],
+  );
+  return result.insertId;
 };

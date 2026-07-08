@@ -3,6 +3,7 @@ import {
   getLocations,
   getLocationById,
   getLocationsByCityId,
+  createLocation,
 } from "../services/locationsService.ts";
 
 export const getLocationsController = async (_req: Request, res: Response) => {
@@ -44,5 +45,34 @@ export const getLocationsByCityIdController = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Could not fetch locations for city" });
+  }
+};
+
+export const createLocationController = async (req: Request, res: Response) => {
+  const { cityId, locationName, latitude, longitude, locationDescription } =
+    req.body as {
+      cityId: number;
+      locationName: string;
+      latitude: number;
+      longitude: number;
+      locationDescription?: string;
+    };
+  if (!cityId || !locationName || latitude == null || longitude == null) {
+    return res.status(400).json({
+      error: "cityId, locationName, latitude, and longitude are required",
+    });
+  }
+  try {
+    const id = await createLocation(
+      cityId,
+      locationName,
+      latitude,
+      longitude,
+      locationDescription ?? null,
+    );
+    res.status(201).json({ message: "Location created", locationId: id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not create location" });
   }
 };

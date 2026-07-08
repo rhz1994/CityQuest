@@ -1,5 +1,5 @@
 import { database } from "../../database.ts";
-import type { RowDataPacket } from "mysql2";
+import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import type { Location } from "../types/types.ts";
 
 export const getLocations = async (): Promise<Location[]> => {
@@ -27,4 +27,18 @@ export const getLocationsByCityId = async (
     [cityId],
   );
   return rows as Location[];
+};
+
+export const createLocation = async (
+  cityId: number,
+  locationName: string,
+  latitude: number,
+  longitude: number,
+  locationDescription: string | null,
+): Promise<number> => {
+  const [result] = await database.query<ResultSetHeader>(
+    "INSERT INTO locations (cityId, locationName, latitude, longitude, locationDescription) VALUES (?, ?, ?, ?, ?)",
+    [cityId, locationName, latitude, longitude, locationDescription],
+  );
+  return result.insertId;
 };

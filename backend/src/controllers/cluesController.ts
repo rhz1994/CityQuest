@@ -3,6 +3,7 @@ import {
   getClues,
   getClueById,
   getCluesByQuestId,
+  createClue,
 } from "../services/cluesService.ts";
 
 export const getCluesController = async (_req: Request, res: Response) => {
@@ -41,5 +42,31 @@ export const getCluesByQuestIdController = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Could not fetch clues for quest" });
+  }
+};
+
+export const createClueController = async (req: Request, res: Response) => {
+  const { questId, locationId, clueDescription, clueOrder } = req.body as {
+    questId: number;
+    locationId: number;
+    clueDescription: string;
+    clueOrder: number;
+  };
+  if (!questId || !locationId || clueDescription == null || clueOrder == null) {
+    return res.status(400).json({
+      error: "questId, locationId, clueDescription, and clueOrder are required",
+    });
+  }
+  try {
+    const id = await createClue(
+      questId,
+      locationId,
+      clueDescription,
+      clueOrder,
+    );
+    res.status(201).json({ message: "Clue created", clueId: id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not create clue" });
   }
 };
