@@ -9,12 +9,13 @@ labels:
 
 ## Goal
 
-Allow admins to create content without editing the database manually.
+Allow admins to create core quest content without editing the database manually.
 
 ## Why is this useful?
 
-New quests require cities, locations, clues, and puzzles. Today only cities and
-quests have create endpoints.
+New quests require cities, locations, clues, and puzzles. Cities and quests
+already have create endpoints, but locations, clues, and puzzles still need
+admin create routes.
 
 ## Proposed solution
 
@@ -27,4 +28,5 @@ Add admin-protected create endpoints for locations, clues, and puzzles.
 - [ ] `POST /puzzles` creates a puzzle and requires admin.
 - [ ] Request bodies are validated.
 - [ ] Non-admin users receive `403`.
+- [ ] Created records return their new IDs.
 

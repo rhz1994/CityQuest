@@ -3,7 +3,7 @@
 ### Setup
 
 1. Start the database: 'docker compose up -d'
-2. Run migratiobs: 'npm run migrate'
+2. Run migrations: 'npm run migrate'
 
 ### Migrations
 

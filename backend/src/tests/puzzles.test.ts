@@ -6,9 +6,9 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 let userId: number;
 let cityId: number;
 let questId: number;
-let locationIds: number[] = [];
-let clueIds: number[] = [];
-let puzzleIds: number[] = [];
+const locationIds: number[] = [];
+const clueIds: number[] = [];
+const puzzleIds: number[] = [];
 
 const testLatitude = 57.708278;
 const testLongitude = 11.966889;

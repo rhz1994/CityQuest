@@ -6,3 +6,4 @@ dist/
 .DS_Store
 coverage/
 .github/copilot-instructions.md
+.claude/

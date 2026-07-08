@@ -5,7 +5,7 @@ labels:
   - auth
   - backend
   - mobile
-  - priority-high
+  - priority-medium
 ---
 
 ## Goal
